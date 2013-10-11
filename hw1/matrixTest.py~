@@ -1,0 +1,107 @@
+import numpy as np
+#import scipy as sp 
+
+# Using the array library
+
+x = np.array( [[-4, 3, 1], [2, 5, 2], [4, -5, 4]] )
+y = np.array( [[1, 2, -3], [5, -1, -6], [1, 6, 2]] )
+z = np.array( [[5], [8], [-2]] )
+w = np.array([1,2,3])
+v = np.array([-7,8,9])
+
+# Matrix * Matrix
+print "Matrix * Matrix"
+print np.dot(x, y)
+print '\n'
+
+# Matrix * Vector
+print "Matrix * Vector"
+print np.dot(x, z)
+print '\n'
+
+# Dot Product
+print "Dot Product"
+print np.inner(v, w)
+print '\n'
+
+# Transpose
+print "Transpose"
+print np.transpose(x)
+print '\n'
+
+# Inverse
+print "Inverse"
+print np.linalg.inv(x)
+print '\n'
+
+# Matrix multiplied by its inverse
+print "Matrix multiplied by its inverse"
+inv = np.linalg.inv(x)
+print np.dot(inv,x)
+print '\n'
+
+# Addition
+print "Addition"
+print x + y
+print '\n'
+
+# Scalar multiplication
+print "Scalar Multiplication"
+print 3 * x
+print '\n'
+
+# Using the matrix library
+
+x = np.matrix( '-4 3 1; 2 5 2; 4 -5 4' )
+y = np.matrix( '1 2 -3; 5 -1 -6; 1 6 2' )
+z = np.matrix( '5; 8; -2' )
+w = np.matrix( '2 1 8' )
+v = np.matrix( '-10 2 1' )
+
+# Matrix * Matrix
+print "Matrix * Matrix"
+print x * y
+print '\n'
+
+# Matrix * Vector
+print "Matrix * Vector"
+print x * z
+print '\n'
+
+# Dot Product
+print "Dot Product"
+print np.inner(w, v)
+print '\n'
+
+print 20 + np.inner(w, v).item((0, 0))
+
+#Dot Product (Vector)
+print "Dot Product (Vector)"
+print np.vdot(w, v)
+print '\n'
+
+# Transpose
+print "Transpose"
+print np.transpose(x)
+print '\n'
+
+# Inverse
+print "Inverse"
+print x.I
+print '\n'
+
+# Matrix multiplied by its inverse
+print "Matrix multiplied by its inverse"
+invM = x.I
+print invM * x
+print '\n'
+
+# Addition
+print "Addition"
+print x + y
+print '\n'
+
+# Scalar multiplication
+print "Scalar Multiplication"
+print 3 * x
+print '\n'

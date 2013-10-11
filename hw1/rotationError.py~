@@ -1,0 +1,6 @@
+import math
+class RotateError( Exception ): pass
+def rot(a,b,c):
+    if ((a == 0) and (b == 0) and (c == 0)):
+        ex= RotateError( "Invalid x, y, and z coordinates for rotation. They cannot all be 0!" )
+        raise ex
