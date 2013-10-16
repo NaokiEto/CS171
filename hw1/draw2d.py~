@@ -7,6 +7,7 @@ import sys
 from PIL import Image
 import os
 
+# regular bresenham
 def bresenham(a1, b1, a2, b2, xlen, ylen):
     y = b1
     dy = b2 - b1
@@ -108,8 +109,6 @@ while (first != ''):
     if(str(first) == "\n"):
         first = fo.readline()
 
-    print "huh ", line1
-
     # if the line says polyline
     if ("polyline" in first):
         # read the coordinates
@@ -118,8 +117,6 @@ while (first != ''):
         point1 = parameter.parseString(subset)
         x1 = int(point1[0] * xRes/(int(xmax) - int(xmin)))
         y1 = int(point1[1] * yRes/(int(ymax) - int(ymin)))
-        print "the coordinates are: (", point1[0], ", ", point1[1], ")"
-        print "1st point parsed: (", x1, ", ", y1, ")"
 
         # read the next set of coordinates
         subset = fo.readline()
@@ -127,8 +124,6 @@ while (first != ''):
 
         x2 = int(point2[0] * xRes/(int(xmax) - int(xmin)))
         y2 = int(point2[1] * yRes/(int(ymax) - int(ymin)))
-        print "the 2nd coordinates are: (", point2[0], ", ", point2[1], ")"
-        print "2nd point parsed: (", x2, ", ", y2, ")"
 
         a1 = x1
         b1 = y1
@@ -146,7 +141,6 @@ while (first != ''):
             n1 = b1
             m2 = a2
             n2 = b2
-        print "the two points are: (", m1, ", ", n1, ") and (", m2, ", ", n2, ")"
         # for the case where the positive slope <= 1 
         if((n2 - n1 >= 0) and (m2 - m1 >= n2 - n1)):
             bresenham(m1, n1, m2, n2, xRes, yRes)
@@ -189,7 +183,6 @@ while (first != ''):
                 n1 = b1
                 m2 = a2
                 n2 = b2
-            print "the two points are: (", m1, ", ", n1, ") and (", m2, ", ", n2, ")"
             # for the case where the positive slope <= 1 
             if((n2 - n1 >= 0) and (m2 - m1 >= n2 - n1)):
                 bresenham(m1, n1, m2, n2, xRes, yRes)

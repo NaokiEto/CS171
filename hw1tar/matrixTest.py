@@ -1,0 +1,136 @@
+import numpy as np
+import unittest
+
+# Using the array library
+
+x = np.array( [[-4, 3, 1], [2, 5, 2], [4, -5, 4]] )
+y = np.array( [[1, 2, -3], [5, -1, -6], [1, 6, 2]] )
+z = np.array( [[5], [8], [-2]] )
+w = np.array([1,2,3])
+v = np.array([-7,8,9])
+
+# Matrix * Matrix
+def MatrixMultiply(m, n):
+    return np.dot(m, n)
+
+# Matrix * Vector
+def MatrixVector(m, n):
+    return np.dot(m, n)
+
+# Dot Product
+def DotProduct(m, n):
+    return np.inner(m, n)
+
+# Transpose
+def Transpose(m):
+    return np.transpose(m)
+
+# Inverse
+def Inverse(m):
+    return np.linalg.inv(m)
+
+# Matrix multiplied by its inverse
+def MInv(m):
+    inv = Inverse(m)
+    return MatrixMultiply(m, inv)
+
+# Matrix addition
+def MatrixAdd(m, n):
+    return m + n
+
+# Scalar Multiplication
+def SMul(num, m):
+    return num * m
+
+class MyTest(unittest.TestCase):
+    # Matrix * Matrix
+    def test_multiplyMM(self):
+        MM = MatrixMultiply(x, y)
+        self.assertEqual(MM[0,0], 12)
+        self.assertEqual(MM[1,0], 29)
+        self.assertEqual(MM[2,0], -17)
+        self.assertEqual(MM[0,1], -5)
+        self.assertEqual(MM[1,1], 11)
+        self.assertEqual(MM[2,1], 37)
+        self.assertEqual(MM[0,2], -4)
+        self.assertEqual(MM[1,2], -32)
+        self.assertEqual(MM[2,2], 26)
+
+    # Matrix * Vector
+    def test_multiplyMV(self):
+        MV = MatrixVector(x, z)
+        self.assertEqual(MV[0, 0], 2)
+        self.assertEqual(MV[1, 0], 46)
+        self.assertEqual(MV[2, 0], -28)
+
+    # Dot Product
+    def test_dotProduct(self):
+        self.assertEqual(DotProduct(v, w), 36)
+
+    # Transpose
+    def test_transpose(self):
+        T = Transpose(x)
+        self.assertEqual(T[0, 0], -4)
+        self.assertEqual(T[1, 0], 3)
+        self.assertEqual(T[2, 0], 1)
+        self.assertEqual(T[0, 1], 2)
+        self.assertEqual(T[1, 1], 5)
+        self.assertEqual(T[2, 1], 2)
+        self.assertEqual(T[0, 2], 4)
+        self.assertEqual(T[1, 2], -5)
+        self.assertEqual(T[2, 2], 4)
+
+    # Inverse
+    def test_inverse(self):
+        I = Inverse(x)
+        self.assertAlmostEqual(I[0, 0], -30/150.0)
+        self.assertAlmostEqual(I[1, 0], 0)
+        self.assertAlmostEqual(I[2, 0], 30/150.0)
+        self.assertAlmostEqual(I[0, 1], 17/150.0)
+        self.assertAlmostEqual(I[1, 1], 20/150.0)
+        self.assertAlmostEqual(I[2, 1], 8/150.0)
+        self.assertAlmostEqual(I[0, 2], -1/150.0)
+        self.assertAlmostEqual(I[1, 2], -10/150.0)
+        self.assertAlmostEqual(I[2, 2], 26/150.0)
+
+    # Matrix multiplied by its inverse
+    def test_MInv(self):
+        MI = MInv(x)
+        self.assertAlmostEqual(MI[0, 0], 1)
+        self.assertAlmostEqual(MI[1, 0], 0)
+        self.assertAlmostEqual(MI[2, 0], 0)
+        self.assertAlmostEqual(MI[0, 1], 0)
+        self.assertAlmostEqual(MI[1, 1], 1)
+        self.assertAlmostEqual(MI[2, 1], 0)
+        self.assertAlmostEqual(MI[0, 2], 0)
+        self.assertAlmostEqual(MI[1, 2], 0)
+        self.assertAlmostEqual(MI[2, 2], 1)
+
+    # Matrix addition
+    def test_MatrixAdd(self):
+        MA = MatrixAdd(x, y)
+        self.assertEqual(MA[0, 0], -3)
+        self.assertEqual(MA[1, 0], 7)
+        self.assertEqual(MA[2, 0], 5)
+        self.assertEqual(MA[0, 1], 5)
+        self.assertEqual(MA[1, 1], 4)
+        self.assertEqual(MA[2, 1], 1)
+        self.assertEqual(MA[0, 2], -2)
+        self.assertEqual(MA[1, 2], -4)
+        self.assertEqual(MA[2, 2], 6)
+
+    # Scalar Multiplication
+    def test_SMul(self):
+        SM = SMul(3, x)
+        self.assertEqual(SM[0, 0], -12)
+        self.assertEqual(SM[1, 0], 6)
+        self.assertEqual(SM[2, 0], 12)
+        self.assertEqual(SM[0, 1], 9)
+        self.assertEqual(SM[1, 1], 15)
+        self.assertEqual(SM[2, 1], -15)
+        self.assertEqual(SM[0, 2], 3)
+        self.assertEqual(SM[1, 2], 6)
+        self.assertEqual(SM[2, 2], 12)
+
+if __name__ == '__main__':
+    unittest.main()
