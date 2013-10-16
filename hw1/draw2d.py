@@ -7,6 +7,7 @@ import sys
 from PIL import Image
 import os
 
+# regular bresenham
 def bresenham(a1, b1, a2, b2, xlen, ylen):
     y = b1
     dy = b2 - b1
@@ -208,7 +209,6 @@ while (first != ''):
             # move to the next line
             subset = fo.readline()
     else:
-        print "does it go here?"
         subset = fo.readline()
     first = subset
 

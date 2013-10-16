@@ -10,20 +10,18 @@ import sys
 fileParse = raw_input("Enter the file you want to parse: ")
 print "The file name is : ", fileParse
 
+# Read the file
 fo = open(fileParse, "r")
 
 # define grammar
 # number is real
-#number = Word(nums+'.').setParseAction(lambda t: float(t[0]))
-
 number = pp.Regex(r"-?\d+(\.\d*)?([Ee][+-]?\d+)?")
 number.setParseAction(lambda toks:float(toks[0]))
- 
 
 # Optional added for the additional number for rotation
-parameter = pp.Word( pp.alphas ) + number + number + number + pp.Optional(number)
+parameter = pp.Word(pp.alphas) + number + number + number + pp.Optional(number)
 
-# first line of file
+# first line of file: the options are either translation, rotation, or scale factor
 first = fo.readline()
 
 line1 = parameter.parseString(first)
@@ -46,7 +44,7 @@ else:
     scaleFactorY = line1[2]
     scaleFactorZ = line1[3]
 
-# second line of file
+# second line of file: the options are either translation, rotation, or scale factor
 second = fo.readline()
 
 line2 = parameter.parseString(second)
@@ -69,7 +67,7 @@ else:
     scaleFactorY = line2[2]
     scaleFactorZ = line2[3]
 
-# third line of file
+# third line of file: the options are either translation, rotation, or scale factor
 third = fo.readline()
 
 line3 = parameter.parseString(third)

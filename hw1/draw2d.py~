@@ -111,7 +111,7 @@ while (first != ''):
     print "huh ", line1
 
     # if the line says polyline
-    if(("polyline" in first) or (line1[0] == "polyline")):
+    if ("polyline" in first):
         # read the coordinates
         subset = fo.readline()
 
@@ -208,7 +208,6 @@ while (first != ''):
             # move to the next line
             subset = fo.readline()
     else:
-        print "does it go here?"
         subset = fo.readline()
     first = subset
 
