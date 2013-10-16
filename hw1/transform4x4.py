@@ -1,26 +1,30 @@
 #!/usr/bin/python
 
 import numpy as np
-from pyparsing import*
+import pyparsing as pp
 from math import*
 from rotationerror import RotateError
 import sys
 
+# Get the file name and open it
 fileParse = raw_input("Enter the file you want to parse: ")
 print "The file name is : ", fileParse
 
 fo = open(fileParse, "r")
 
 # define grammar
+# number is real
+#number = Word(nums+'.').setParseAction(lambda t: float(t[0]))
 
-number = Word(nums+'.').setParseAction(lambda t: float(t[0]))
+number = pp.Regex(r"-?\d+(\.\d*)?([Ee][+-]?\d+)?")
+number.setParseAction(lambda toks:float(toks[0]))
+ 
 
 # Optional added for the additional number for rotation
-parameter = Word( alphas ) + number + number + number + Optional(number)
+parameter = pp.Word( pp.alphas ) + number + number + number + pp.Optional(number)
 
+# first line of file
 first = fo.readline()
-
-print "The first line is: ", first
 
 line1 = parameter.parseString(first)
 
@@ -42,9 +46,8 @@ else:
     scaleFactorY = line1[2]
     scaleFactorZ = line1[3]
 
+# second line of file
 second = fo.readline()
-
-print "the second line is: ", second
 
 line2 = parameter.parseString(second)
 
@@ -66,9 +69,8 @@ else:
     scaleFactorY = line2[2]
     scaleFactorZ = line2[3]
 
+# third line of file
 third = fo.readline()
-
-print "the third line is: ", third
 
 line3 = parameter.parseString(third)
 
@@ -109,6 +111,7 @@ rotationMat = np.array([[x**2 + (1 - x**2)*cos(angle), x*y*(1-cos(angle)) - z*si
 		                [x*z*(1-cos(angle)) - y*sin(angle), y*z*(1-cos(angle)) + x*sin(angle), z**2 + (1-z**2)*cos(angle), 0],
 		                [0, 0, 0, 1]])
 
+# the 6 possible orders of translation, rotation, and scaleFactor (to multiple matrices)
 if ((line1[0] == "translation") and (line2[0] == "rotation") and (line3[0] == "scaleFactor")):
     mat1 = np.dot(translateMat, rotationMat)
     mat2 = np.dot(mat1, scaleFactorMat)

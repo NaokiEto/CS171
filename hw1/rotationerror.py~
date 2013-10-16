@@ -1,3 +1,0 @@
-class RotateError(Exception):
-   def __init__(self):
-      print "xyz arguments are wrong"
