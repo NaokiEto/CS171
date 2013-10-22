@@ -8,17 +8,29 @@ from math import*
 
 def rotationMatrix(a, b, c, theta):
     return np.array([[a**2 + (1 - a**2)*cos(theta), a*b*(1-cos(theta)) - c*sin(theta), a*c*(1-cos(theta)) + b*sin(theta), 0],
-	                    [a*b*(1-cos(theta)) + c*sin(theta), b**2 + (1-b**2)*cos(theta), b*c*(1-cos(theta)) - a*sin(theta), 0],
-	                    [a*c*(1-cos(theta)) - b*sin(theta), b*c*(1-cos(theta)) + a*sin(theta), c**2 + (1-c**2)*cos(theta), 0],
-	                    [0, 0, 0, 1]])
+                    [a*b*(1-cos(theta)) + c*sin(theta), b**2 + (1-b**2)*cos(theta), b*c*(1-cos(theta)) - a*sin(theta), 0],
+                    [a*c*(1-cos(theta)) - b*sin(theta), b*c*(1-cos(theta)) + a*sin(theta), c**2 + (1-c**2)*cos(theta), 0],
+                    [0, 0, 0, 1]])
 
 def translateMatrix(a, b, c):
-    return translateMat = np.array([[1, 0, 0, a], 
-                                    [0, 1, 0, b], 
-                                    [0, 0, 1, c], 
-                                    [0, 0, 0, 1]])
+    return np.array([[1, 0, 0, a], 
+                    [0, 1, 0, b], 
+                    [0, 0, 1, c], 
+                    [0, 0, 0, 1]])
+
+def scalefactorMatrix(a, b, c):
+    return np.array([[a, 0, 0, 0], 
+                   [0, b, 0, 0], 
+                   [0, 0, c, 0], 
+                   [0, 0, 0, 1]])
 
 fo = sys.stdin
+
+# x dimension size
+xRes = sys.argv[1]
+
+# y dimension size
+yRes = sys.argv[2]
 
 # define grammar
 # number is float form
@@ -92,6 +104,24 @@ while (first != ''):
                 t = firstparse[1]
             first = fo.readline()
 
+        # translation matrix
+        translateCam = translateMatrix(translateX, translateY, translateZ)
+
+        # rotation matrix
+        rotationCam = rotationMatrix(x, y, z, angle)
+
+        # calculate the camera matrix
+        # World space to camera space
+        cameraMat = np.dot(translateCam, rotationCam)
+
+        # calculate the Perspective Projection matrix
+        perspectiveProj = np.array([[2.0*n / (r - l), 0, float(r + l)/(r - l), 0], 
+                                    [0, 2.0*n / (t - b), float(t + b) / (t - b), 0],
+                                    [0, 0, -1.0*(f + n)/(f - n), -2.0*(f*n)/(f - n)],
+                                    [0, 0, -1, 0]])
+
+        print perspectiveProj
+
     # if we reach the Separator parameter
     if (len(firstparse) != 0 and (firstparse[0] == 'Separator')):
         first = fo.readline()
@@ -111,35 +141,49 @@ while (first != ''):
                     tX = firstparse[1]
                     tY = firstparse[2]
                     tZ = firstparse[3]
+                # rotation
                 elif (firstparse[0] == 'rotation'):
                     rX = firstparse[1]
                     rY = firstparse[2]
                     rZ = firstparse[3]
                     rAngle = firstparse[4]
-
+                # scale factor
                 else:
                     sfX = firstparse[1]
                     sfY = firstparse[2]
                     sfZ = firstparse[3]
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
+
+            # calculate the separator matrix (S = TRS)
+            # it is for Object Space to World Space
+            translateSep = translateMatrix(tX, tY, tZ)
+            rotationSep = rotationMatrix(rX, rY, rZ, rAngle)
+            scalefactorSep = scalefactorMatrix(sfX, sfY, sfZ)
+
+            SIntermediate = np.dot(rotationSep, scalefactorSep)
+            S = np.dot(translateSep, SIntermediate)
+
+            # calculate camera space to NDC (Normalized Device Coordinate) Space
+
+            transformInter = np.dot(perspectiveProj, np.linalg.inv(cameraMat))
+            transformMat = np.dot(transformInter, S)
+        print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+        print firstparse
+        print "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+
+        if (len(firstparse) != 0 and (firstparse[0] == '}')):
+            first = fo.readline()
+            firstparse = parameter.parseString(first)
+
+        if (len(firstparse) != 0 and (firstparse[0] == 'Coordinate')):
+            first = fo.readline()
+            firstparse = parameter.parseString(first)
+            if (len(firstparse) != 0 and (firstparse[0] == 'point')):
+                print "hi there"
     first = fo.readline()
 
-# translation matrix
-translateCam = translateMatrix(translateX, translateY, translateZ)
-
-# rotation matrix
-rotationCam = rotationMatrix(x, y, z, angle)
-
-# calculate the camera matrix
-# World space to camera space
-cameraMat = np.dot(translateMat, rotationCam)
 
 
-# calculate the Perspective Projection matrix
-perspectiveProj = np.array([[2.0*n / (r - l), 0, float(r + l)/(r - l), 0], 
-                            [0, 2.0*n / (t - b), float(t + b) / (t - b), 0],
-                            [0, 0, -1.0*(f + n)/(f - n), -2.0*(f*n)/(f - n)],
-                            [0, 0, -1, 0]])
 
-print perspectiveProj
+
