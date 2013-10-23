@@ -14,7 +14,7 @@ def bresenham(a1, b1, a2, b2, xlen, ylen):
     dxdy = b2 - b1 + a1 - a2
     F = b2 - b1 + a1 - a2
     for i in range(a1, a2 + 1):
-        pixel[(ylen/2 - y)*xlen + i + xlen/2] = 1
+        pixel[(ylen/2 - y - 1)*xlen + i + xlen/2 - 1] = 1
         if(F < 0):
             F += dy
         else:
@@ -23,13 +23,13 @@ def bresenham(a1, b1, a2, b2, xlen, ylen):
     return
 
 # using the algorithm for pixel that (xlen - x)*xlen + (ylen - y)
-def bresenhamG1(b1, a1, b2, a2, xlen, ylen):
-    y = b1
-    dy = b2 - b1
-    dxdy = b2 - b1 + a1 - a2
-    F = b2 - b1 + a1 - a2
-    for i in range(a1, a2 + 1):
-        pixel[(xlen - i - xlen/2)*xlen + ylen - (ylen/2 - y)] = 1
+def bresenhamG1(a1, b1, a2, b2, xlen, ylen):
+    y = a1
+    dy = a2 - a1
+    dxdy = a2 - a1 + b1 - b2
+    F = a2 - a1 + b1 - b2
+    for i in range(b1, b2 + 1):
+        pixel[(xlen/2 - i - 1)*xlen + (y + ylen/2) - 1] = 1
         if(F < 0):
             F += dy
         else:
@@ -40,14 +40,12 @@ def bresenhamG1(b1, a1, b2, a2, xlen, ylen):
 # using the algorithm to flip over the y-axis, and do the bresenham algorithm
 # then, flip back to correct pixel form by subtracting xlen - (i + xlen/2)
 def bresenhamNeg(a1, b1, a2, b2, xlen, ylen):
-    na1 = a1 * -1
-    na2 = a2 * -1
     y = b2
     dy = b1 - b2
-    dxdy = b1 - b2 + na2 - na1
-    F = b1 - b2 + na2 - na1
-    for i in range(na2, na1 + 1):
-        pixel[(ylen/2 - y)*xlen + xlen - (i + xlen/2)] = 1
+    dxdy = b1 - b2 + a1 - a2
+    F = b1 - b2 + a1 - a2
+    for i in range(-1*a2, -1*a1 + 1):
+        pixel[(ylen/2 - y - 1)*xlen + xlen/2 - i - 1] = 1
         if(F < 0):
             F += dy
         else:
@@ -57,14 +55,12 @@ def bresenhamNeg(a1, b1, a2, b2, xlen, ylen):
 
 # using the algorithm for pixel that (xlen - x)*xlen + (ylen - y)
 def bresenhamNegG1(a1, b1, a2, b2, xlen, ylen):
-    na1 = a1 * -1
-    na2 = a2 * -1
-    y = na2
-    dy = na1 - na2
-    dxdy = na1 - na2 + b2 - b1
-    F = na1 - na2 + b2 - b1
+    y = -1*a2
+    dy = a2 - a1
+    dxdy = a2 - a1 + b2 - b1
+    F = a2 - a1 + b2 - b1
     for i in range(b2, b1 + 1):
-        pixel[(xlen - i - xlen/2)*xlen + xlen - (ylen - (ylen/2 - y))] = 1
+        pixel[(xlen/2 - i - 1)*xlen + ylen/2 - y] = 1
         if(F < 0):
             F += dy
         else:
@@ -164,8 +160,6 @@ while (first != ''):
             point3 = parameter.parseString(subset) 
             x3 = int(point3[0] * xRes/(int(xmax) - int(xmin)))
             y3 = int(point3[1] * yRes/(int(ymax) - int(ymin)))
-            print "the 3rd coordinates are: (", point3[0], ", ", point3[1], ")"
-            print "3rd point parsed: (", x3, ", ", y3, ")"
 
             a1 = a2
             b1 = b2
