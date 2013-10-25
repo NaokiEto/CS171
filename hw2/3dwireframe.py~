@@ -26,14 +26,16 @@ def scalefactorMatrix(a, b, c):
 
 # regular bresenham, for positive slopes between 0 and 1.
 def bresenham(a1, b1, a2, b2, xlen, ylen):
+    print "the first point is: (", a1, ", ", b1, ")"
+    print "the second point is: (", a2, ", ", b2, ")"
     y = b1
     dy = b2 - b1
     dxdy = b2 - b1 + a1 - a2
     F = b2 - b1 + a1 - a2
-    print "the x-coords are: ", a1, a2
-    print "the y-coords are: ", b1, b2
+    #print "the x-coords are: ", a1, a2
+    #print "the y-coords are: ", b1, b2
     for i in range(a1, a2 + 1):
-        print "the index is: ", (ylen/2 - y) * xlen + i + xlen/2
+        #print "the index is: ", (ylen/2 - y - 1) * xlen + i + xlen/2 - 1
         pixel[(ylen/2 - y - 1)*xlen + i + xlen/2 - 1] = 1
         if(F < 0):
             F += dy
@@ -45,6 +47,8 @@ def bresenham(a1, b1, a2, b2, xlen, ylen):
 # using the algorithm for pixel that (xlen - x)*xlen + (ylen - y)
 # for positive slopes greater than 1
 def bresenhamG1(a1, b1, a2, b2, xlen, ylen):
+    print "the first point is: (", a1, ", ", b1, ")"
+    print "the second point is: (", a2, ", ", b2, ")"
     y = a1
     dy = a2 - a1
     dxdy = a2 - a1 + b1 - b2
@@ -62,6 +66,8 @@ def bresenhamG1(a1, b1, a2, b2, xlen, ylen):
 # then, flip back to correct pixel form by subtracting xlen - (i + xlen/2)
 # for negative slopes between -1 and 0
 def bresenhamNeg(a1, b1, a2, b2, xlen, ylen):
+    print "the first point is: (", a1, ", ", b1, ")"
+    print "the second point is: (", a2, ", ", b2, ")"
     y = b2
     dy = b1 - b2
     dxdy = b1 - b2 + a1 - a2
@@ -79,16 +85,18 @@ def bresenhamNeg(a1, b1, a2, b2, xlen, ylen):
 # using the algorithm for pixel that (xlen - x)*xlen + (ylen - y)
 # for negative slopes less than -1
 def bresenhamNegG1(a1, b1, a2, b2, xlen, ylen):
+    print "the first point is: (", a1, ", ", b1, ")"
+    print "the second point is: (", a2, ", ", b2, ")"
     y = -1*a2
     dy = a2 - a1
     dxdy = a2 - a1 + b2 - b1
     F = a2 - a1 + b2 - b1
-    print "the coordinates are: ", a1, b1, "and ", a2, b2 
+    #print "the coordinates are: ", a1, b1, "and ", a2, b2 
     for i in range(b2, b1 + 1):
-        print "i is: ", i
-        print "y is: ", y
-        print "the index is: ", (xlen/2 - i - 1)*xlen + ylen/2 - y
-        pixel[(xlen/2 - i - 1)*xlen + ylen/2 - y] = 1
+        #print "i is: ", i
+        #print "y is: ", y
+        #print "the index is: ", (xlen/2 - i - 1)*xlen + ylen/2 - y - 1
+        pixel[(xlen/2 - i - 1)*xlen + ylen/2 - y - 1] = 1
         if(F < 0):
             F += dy
         else:
@@ -142,7 +150,7 @@ first = fo.readline()
 # as long as we don't reach the end of the file
 while (first != ''):
     firstparse = parameter.parseString(first)
-    print firstparse
+    #print firstparse
 
     # if we reach PerspectiveCamera parameter
     if (len(firstparse) != 0 and (firstparse[0] == 'PerspectiveCamera')):
@@ -285,15 +293,15 @@ while (first != ''):
             first = fo.readline()
             firstparse = parameter.parseString(first)
             if (len(firstparse) != 0 and (firstparse[0] == 'point')):
-                print "hi there"
-                first = fo.readline()
-                firstparse = parameter.parseString(first)
+                #print "hi there"
 
                 # Create a list of the coordinates
                 coordsList = []
-                while (firstparse[0] != ']' and firstparse[0] != '}'):
-                    newmat = np.dot(transformMat, np.array( [[float(firstparse[0])], [float(firstparse[1])], [float(firstparse[2])], [1.0]] ))
-                    print newmat
+                # to compensate for the point
+                f = 2
+                while (firstparse[f] != ']' and firstparse[f] != '}'):
+                    newmat = np.dot(transformMat, np.array( [[float(firstparse[f])], [float(firstparse[f+1])], [float(firstparse[f+2])], [1.0]] ))
+                    #print newmat
                     newX = newmat[0,0]/newmat[3,0]
                     newY = newmat[1,0]/newmat[3,0]
                     newZ = newmat[2,0]/newmat[3,0]
@@ -302,7 +310,8 @@ while (first != ''):
                     coordsList.append(newZ)
                     first = fo.readline()
                     firstparse = parameter.parseString(first)
-                print "the coords list is ", coordsList
+                    f = 0
+                #print "the coords list is ", coordsList
             first = fo.readline()
             firstparse = parameter.parseString(first)
 
@@ -310,79 +319,49 @@ while (first != ''):
         if (len(firstparse) != 0 and (firstparse[0] == '}')):
             first = fo.readline()
             firstparse = parameter.parseString(first)
-            print "wutttt"
-        print firstparse
+            #print "wutttt"
+        #print firstparse
 
+        # start into the IndexedFaceSet block parameter
         if (len(firstparse) != 0 and (firstparse[0] == 'IndexedFaceSet')):
             first = fo.readline()
-            firstparse = parameter.parseString(first)
-            print "the parsed stuff is: ", firstparse
-            # for the first row, with the coordIndex as firstparse[0]
 
-            i = 0
-            while (i < len(firstparse)):
-                k = firstparse[i]
-                while ((k == ',') or (k == '[') or (k == ']') or (k == 'coordIndex')):
-                    print "i never get here huh"
-                    i += 1
+            # read until the end of the IndexedFaceSet block parameter
+            while(first.strip() != '}'):
+                firstparse = parameter.parseString(first)
+                #print "the line reads as: ", first
+                #print "the parsed stuff is: ", firstparse
+                # for the first row, with the coordIndex as firstparse[0]
+
+                i = 0
+                # Go through the line
+                while (i < len(firstparse)):
                     k = firstparse[i]
-                print "the coordinates are ", k
-                x1 = int(coordsList[int(3*k)] * xRes)
-                y1 = int(coordsList[int(3*k) + 1] * yRes)
+                    # if the element is a comma, bracket, or coordIndex, then move on to next element
+                    while ((k == ',') or (k == '[') or (k == ']') or (k == 'coordIndex')):
+                        #print "i never get here huh"
+                        i += 1
+                        k = firstparse[i]
+                    print "the 1st point is at ", k
+                    # put the 1st point in x1, y1
+                    x1 = int(coordsList[int(3*k)] * xRes)
+                    y1 = int(coordsList[int(3*k) + 1] * yRes)
 
-                # attempt to move to next element in the coordIndex list
-                i += 1
-                j = firstparse[i]
-                while (j == ',' or j == '[' or j == ']' or j == 'coordIndex'):
+                    # attempt to move to next element in the coordIndex list
                     i += 1
                     j = firstparse[i]
-                print "the element is: ", j
-                x2 = int(coordsList[int(3*j)] * xRes)
-                y2 = int(coordsList[int(3*j) + 1] * yRes)
+                    while (j == ',' or j == '[' or j == ']' or j == 'coordIndex'):
+                        i += 1
+                        j = firstparse[i]
+                    print "the 2nd point is: ", j
+                    # put the 2nd point in x2, y2
+                    x2 = int(coordsList[int(3*j)] * xRes)
+                    y2 = int(coordsList[int(3*j) + 1] * yRes)
 
-                a1 = x1
-                b1 = y1
-                a2 = x2
-                b2 = y2
-
-                # Apply Bresenham's line algorithm
-                if (a2 <= a1):            
-                    m1 = a2
-                    n1 = b2
-                    m2 = a1
-                    n2 = b1
-                else:
-                    m1 = a1
-                    n1 = b1
-                    m2 = a2
-                    n2 = b2
-                # for the case where the positive slope <= 1 
-                if((n2 - n1 >= 0) and (m2 - m1 >= n2 - n1)):
-                    bresenham(m1, n1, m2, n2, xRes, yRes)
-
-                # for the case where the positive slope > 1
-                elif((n2 - n1 >= 0) and (m2 - m1 < n2 - n1)):
-                    bresenhamG1(m1, n1, m2, n2, xRes, yRes)
-
-                # for the case where the negative slope >= -1
-                elif((n2 - n1 < 0) and (m2 - m1 >= n1 - n2)):
-                    bresenhamNeg(m1, n1, m2, n2, xRes, yRes)
-
-                # for the case where the negative slope < -1
-                elif((n2 - n1 < 0) and (m2 - m1 < n1 - n2)):
-                    print "HHHHHHHHHHHHHHHHHHHHHHHHHHHHH"
-                    bresenhamNegG1(m1, n1, m2, n2, xRes, yRes)
-                
-                # make sure the coordinates are not empty string or polyline
-                while (firstparse[i] != -1 and (subset.strip() != '') and (str(subset) != "")):
-                    point3 = parameter.parseString(subset) 
-                    x3 = int(point3[0] * xRes/(int(xmax) - int(xmin)))
-                    y3 = int(point3[1] * yRes/(int(ymax) - int(ymin)))
-
-                    a1 = a2
-                    b1 = b2
-                    a2 = x3
-                    b2 = y3
+                    a1 = x1
+                    b1 = y1
+                    a2 = x2
+                    b2 = y2
 
                     # Apply Bresenham's line algorithm
                     if (a2 <= a1):            
@@ -409,14 +388,76 @@ while (first != ''):
 
                     # for the case where the negative slope < -1
                     elif((n2 - n1 < 0) and (m2 - m1 < n1 - n2)):
+                        #print "HHHHHHHHHHHHHHHHHHHHHHHHHHHHH"
                         bresenhamNegG1(m1, n1, m2, n2, xRes, yRes)
-                    # move to the next line
-                    subset = fo.readline()
-                # skip over the -1
-                i += 2
-            
+                    
+                    i += 1
+                    t = firstparse[i]
+                    while (t == ',' or t == '[' or t == ']' or t == 'coordIndex'):
+                        i += 1
+                        t = firstparse[i]
+
+                    # make sure the coordinates are not empty string or polyline
+                    while (i < len(firstparse) and firstparse[i] != -1):
+                        l = firstparse[i]
+                        while (l == ',' or l == '[' or l == ']' or l == 'coordIndex'):
+                            i += 1
+                            l = firstparse[i]
+
+                        # put the 3rd point in x3, y3
+                        x3 = int(coordsList[int(3*l)] * xRes)
+                        y3 = int(coordsList[int(3*l) + 1] * yRes)
+
+                        a1 = a2
+                        b1 = b2
+                        a2 = x3
+                        b2 = y3
+
+                        # Apply Bresenham's line algorithm
+                        if (a2 <= a1):            
+                            m1 = a2
+                            n1 = b2
+                            m2 = a1
+                            n2 = b1
+                        else:
+                            m1 = a1
+                            n1 = b1
+                            m2 = a2
+                            n2 = b2
+                        # for the case where the positive slope <= 1 
+                        if((n2 - n1 >= 0) and (m2 - m1 >= n2 - n1)):
+                            bresenham(m1, n1, m2, n2, xRes, yRes)
+
+                        # for the case where the positive slope > 1
+                        elif((n2 - n1 >= 0) and (m2 - m1 < n2 - n1)):
+                            bresenhamG1(m1, n1, m2, n2, xRes, yRes)
+
+                        # for the case where the negative slope >= -1
+                        elif((n2 - n1 < 0) and (m2 - m1 >= n1 - n2)):
+                            bresenhamNeg(m1, n1, m2, n2, xRes, yRes)
+
+                        # for the case where the negative slope < -1
+                        elif((n2 - n1 < 0) and (m2 - m1 < n1 - n2)):
+                            bresenhamNegG1(m1, n1, m2, n2, xRes, yRes)
+                        i += 1
+                        g = firstparse[i]
+                        while (g == ',' or g == '[' or g == ']' or g == 'coordIndex'):
+                            i += 1
+                            g = firstparse[i]
+                    if (i < len(firstparse)):
+                        # if -1 is element, move on
+                        if (firstparse[i] == -1):
+                            i += 1
+                    print "-1 occurs here"
+                first = fo.readline()
 
     first = fo.readline()
+
+for l in range(xRes*yRes):
+    if(pixel[l] == 1):
+        ppm.write(str(255) + " " + str(255) + " " + str(255) + "\n")
+    else:
+        ppm.write(str(0) + " " + str(0) + " " + str(0) + "\n")
 
 ppm.close()
 
