@@ -197,15 +197,24 @@ while (first != ''):
                 t = firstparse[1]
             first = fo.readline()
 
-        # translation matrix
+	# horizontal length of camera view
+	horizoncam = r - l
+
+	# vertical length of camera view
+	verticcam = t - b
+
+        # translation matrix (for position of camera)
         translateCam = translateMatrix(translateX, translateY, translateZ)
 
-        # rotation matrix
+        # rotation matrix (for orientation of camera)
         rotationCam = rotationMatrix(x, y, z, angle)
 
         # calculate the camera matrix
         # World space to camera space
         cameraMat = np.dot(translateCam, rotationCam)
+
+        print "the camera matrix is: "
+        print cameraMat
 
         # calculate the Perspective Projection matrix
         perspectiveProj = np.array([[2.0*n / (r - l), 0, float(r + l)/(r - l), 0], 
@@ -216,12 +225,18 @@ while (first != ''):
         print perspectiveProj
 
     # if we reach the Separator parameter
-    if (len(firstparse) != 0 and (firstparse[0] == 'Separator')):
+    while (len(firstparse) != 0 and (firstparse[0] == 'Separator')):
         first = fo.readline()
         firstparse = parameter.parseString(first)
         
+        # transform multiplication, initialized to identity matrix
+        totaltransform = np.array([[1.0, 0.0, 0.0, 0.0],
+                                   [0.0, 1.0, 0.0, 0.0],
+                                   [0.0, 0.0, 1.0, 0.0],
+                                   [0.0, 0.0, 0.0, 1.0]])
+
         # if we reach the Transform sub-parameter
-        if (len(firstparse) != 0 and (firstparse[0] == 'Transform')):
+        while (len(firstparse) != 0 and (firstparse[0] == 'Transform')):
             first = fo.readline()
             firstparse = parameter.parseString(first)
             
@@ -243,6 +258,7 @@ while (first != ''):
                     rY = firstparse[2]
                     rZ = firstparse[3]
                     rAngle = firstparse[4]
+                    print "the rotation angle is: ", rAngle
                     rotationSep = rotationMatrix(rX, rY, rZ, rAngle)
                 # scale factor
                 elif (firstparse[0] == 'scaleFactor'):
@@ -272,21 +288,29 @@ while (first != ''):
             elif (translate == 'translation' and rotate == 'rotation' and scaleFactor == 'scaleFactor'):
                 SIntermediate = np.dot(rotationSep, scalefactorSep)
                 S = np.dot(translateSep, SIntermediate)
-            
+
+            print "the transform matrix is: "
+            print S
+
+            # Multiply up the transform matrices
+            totaltransform = np.dot(totaltransform, S)
+
+            # end of Transform block parameter
+            if (len(firstparse) != 0 and (firstparse[0] == '}')):
+                first = fo.readline()
+                firstparse = parameter.parseString(first)
+        
+            print "the conglomeration of transform matrix is: "
+            print totaltransform
 
             # calculate camera space to NDC (Normalized Device Coordinate) Space
-
             transformInter = np.dot(perspectiveProj, np.linalg.inv(cameraMat))
-            transformMat = np.dot(transformInter, S)
+            transformMat = np.dot(transformInter, totaltransform)
+
         print transformMat
         print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
         print firstparse
-        print "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
-
-        # end of Transform block parameter
-        if (len(firstparse) != 0 and (firstparse[0] == '}')):
-            first = fo.readline()
-            firstparse = parameter.parseString(first)
+        print "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwws"
 
         # entering the Coordinate subparameter
         if (len(firstparse) != 0 and (firstparse[0] == 'Coordinate')):
@@ -299,8 +323,16 @@ while (first != ''):
                 coordsList = []
                 # to compensate for the point
                 f = 2
-                while (firstparse[f] != ']' and firstparse[f] != '}'):
-                    newmat = np.dot(transformMat, np.array( [[float(firstparse[f])], [float(firstparse[f+1])], [float(firstparse[f+2])], [1.0]] ))
+                while (firstparse[f] != ']' and firstparse[f] != '}' and first.strip() != '}'):
+                    print "the non-transformed coords are: ", firstparse[f], ", ", firstparse[f+1], ", ", firstparse[f+2]
+                    xArr = float(firstparse[f])
+                    yArr = float(firstparse[f+1])
+                    zArr = float(firstparse[f+2])
+
+                    newmat = np.dot(transformMat, np.array( [[xArr], 
+                                                             [yArr], 
+                                                             [zArr], 
+                                                             [1.0]] ))
                     #print newmat
                     newX = newmat[0,0]/newmat[3,0]
                     newY = newmat[1,0]/newmat[3,0]
@@ -311,7 +343,11 @@ while (first != ''):
                     first = fo.readline()
                     firstparse = parameter.parseString(first)
                     f = 0
+                    print "the transformed coords are: ", newX, ", ", newY, ", ", newZ
                 #print "the coords list is ", coordsList
+            first = fo.readline()
+            firstparse = parameter.parseString(first)
+        while (first.strip() == ''):
             first = fo.readline()
             firstparse = parameter.parseString(first)
 
@@ -319,7 +355,7 @@ while (first != ''):
         if (len(firstparse) != 0 and (firstparse[0] == '}')):
             first = fo.readline()
             firstparse = parameter.parseString(first)
-            #print "wutttt"
+            print "wutttt"
         #print firstparse
 
         # start into the IndexedFaceSet block parameter
@@ -343,20 +379,30 @@ while (first != ''):
                         i += 1
                         k = firstparse[i]
                     print "the 1st point is at ", k
+                    print "the point in the coordList: ", coordsList[int(3*k)], ", ", coordsList[int(3*k) + 1]
                     # put the 1st point in x1, y1
-                    x1 = int(coordsList[int(3*k)] * xRes)
-                    y1 = int(coordsList[int(3*k) + 1] * yRes)
+                    # multiply by 1.0/2.0 because the origin is in the center of the window
+                    x1 = int(coordsList[int(3*k)] * xRes * 1.0/2.0)
+                    y1 = int(coordsList[int(3*k) + 1] * yRes * 1.0/2.0)
 
                     # attempt to move to next element in the coordIndex list
                     i += 1
+                    if (i >= len(firstparse)):
+                        first = fo.readline()
+                        firstparse = parameter.parseString(first)
+                        print "the parsed stuff is: ", firstparse
+                        i = 0
+                        print "do i move to the next line?"
                     j = firstparse[i]
                     while (j == ',' or j == '[' or j == ']' or j == 'coordIndex'):
                         i += 1
                         j = firstparse[i]
                     print "the 2nd point is: ", j
+                    print "the point in the coordList: ", coordsList[int(3*j)], ", ", coordsList[int(3*j) + 1]
+
                     # put the 2nd point in x2, y2
-                    x2 = int(coordsList[int(3*j)] * xRes)
-                    y2 = int(coordsList[int(3*j) + 1] * yRes)
+                    x2 = int(coordsList[int(3*j)] * xRes * 1.0/2.0)
+                    y2 = int(coordsList[int(3*j) + 1] * yRes * 1.0/2.0)
 
                     a1 = x1
                     b1 = y1
@@ -392,21 +438,34 @@ while (first != ''):
                         bresenhamNegG1(m1, n1, m2, n2, xRes, yRes)
                     
                     i += 1
+                    if (i >= len(firstparse)):
+                        first = fo.readline()
+                        firstparse = parameter.parseString(first)
+                        i = 0
                     t = firstparse[i]
                     while (t == ',' or t == '[' or t == ']' or t == 'coordIndex'):
                         i += 1
+                        if (i >= len(firstparse)):
+                            first = fo.readline()
+                            firstparse = parameter.parseString(first)
+                            i = 0
                         t = firstparse[i]
 
-                    # make sure the coordinates are not empty string or polyline
+                    # for more than two points
                     while (i < len(firstparse) and firstparse[i] != -1):
                         l = firstparse[i]
                         while (l == ',' or l == '[' or l == ']' or l == 'coordIndex'):
                             i += 1
                             l = firstparse[i]
 
+                            if (i >= len(firstparse)):
+                                first = fo.readline()
+                                firstparse = parameter.parseString(first)
+                                i = 0
+
                         # put the 3rd point in x3, y3
-                        x3 = int(coordsList[int(3*l)] * xRes)
-                        y3 = int(coordsList[int(3*l) + 1] * yRes)
+                        x3 = int(coordsList[int(3*l)] * xRes * 1.0/2.0)
+                        y3 = int(coordsList[int(3*l) + 1] * yRes * 1.0/2.0)
 
                         a1 = a2
                         b1 = b2
@@ -439,18 +498,56 @@ while (first != ''):
                         # for the case where the negative slope < -1
                         elif((n2 - n1 < 0) and (m2 - m1 < n1 - n2)):
                             bresenhamNegG1(m1, n1, m2, n2, xRes, yRes)
+                        print "complete!"
                         i += 1
+                        if (i >= len(firstparse)):
+                            first = fo.readline()
+                            firstparse = parameter.parseString(first)
+                            i = 0
                         g = firstparse[i]
                         while (g == ',' or g == '[' or g == ']' or g == 'coordIndex'):
                             i += 1
                             g = firstparse[i]
+                    a1 = x1
+                    b1 = y1
+                    a2 = x3
+                    b2 = y3
+
+                    # Apply Bresenham's line algorithm
+                    if (a2 <= a1):            
+                        m1 = a2
+                        n1 = b2
+                        m2 = a1
+                        n2 = b1
+                    else:
+                        m1 = a1
+                        n1 = b1
+                        m2 = a2
+                        n2 = b2
+                    # for the case where the positive slope <= 1 
+                    if((n2 - n1 >= 0) and (m2 - m1 >= n2 - n1)):
+                        bresenham(m1, n1, m2, n2, xRes, yRes)
+
+                    # for the case where the positive slope > 1
+                    elif((n2 - n1 >= 0) and (m2 - m1 < n2 - n1)):
+                        bresenhamG1(m1, n1, m2, n2, xRes, yRes)
+
+                    # for the case where the negative slope >= -1
+                    elif((n2 - n1 < 0) and (m2 - m1 >= n1 - n2)):
+                        bresenhamNeg(m1, n1, m2, n2, xRes, yRes)
+
+                    # for the case where the negative slope < -1
+                    elif((n2 - n1 < 0) and (m2 - m1 < n1 - n2)):
+                        bresenhamNegG1(m1, n1, m2, n2, xRes, yRes)
+                    print "complete!"
+
                     if (i < len(firstparse)):
                         # if -1 is element, move on
                         if (firstparse[i] == -1):
                             i += 1
                     print "-1 occurs here"
                 first = fo.readline()
-
+        first = fo.readline()
     first = fo.readline()
 
 for l in range(xRes*yRes):
