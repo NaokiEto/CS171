@@ -193,6 +193,28 @@ while (first != ''):
                                     [0, 0, -1.0*(f + n)/(f - n), -2.0*(f*n)/(f - n)],
                                     [0, 0, -1, 0]])
 
+
+    # if we reach PointLight parameter
+    while (len(firstparse) != 0 and (firstparse[0] == 'PointLight')):
+        first = fo.readline()
+        # if there is a blank line, read another main parameter
+        while (first.strip() != ''):
+            firstparse = parameter.parseString(first)
+            # location parameter
+            if (firstparse[0] == 'location'):
+                lightX = firstparse[1]
+                lightY = firstparse[2]
+                lightZ = firstparse[3]
+            # color parameter
+            elif (firstparse[0] == 'color'):
+                red = firstparse[1]
+                green = firstparse[2]
+                blue = firstparse[3]
+            first = fo.readline()
+        first = fo.readline()
+        firstparse = parameter.parseString(first)
+        print "the colors are: ", red, ", ", green, ", ", blue
+
     # if we reach the Separator parameter
     while (len(firstparse) != 0 and (firstparse[0] == 'Separator')):
         first = fo.readline()
@@ -268,6 +290,32 @@ while (first != ''):
             # calculate camera space to NDC (Normalized Device Coordinate) Space
             transformInter = np.dot(perspectiveProj, np.linalg.inv(cameraMat))
             transformMat = np.dot(transformInter, totaltransform)
+
+        # entering the Material subparameter
+        if (len(firstparse) != 0 and (firstparse[0] == 'Material')):
+            first = fo.readline()
+            # if there is a blank line, read another main parameter
+            while (first.strip() != ):
+                firstparse = parameter.parseString(first)
+                # ambient color parameter
+                if (firstparse[0] == 'ambientColor'):
+                    ambX = firstparse[1]
+                    ambY = firstparse[2]
+                    ambZ = firstparse[3]
+                # diffuse color parameter
+                elif (firstparse[0] == 'diffuseColor'):
+                    diffX = firstparse[1]
+                    diffY = firstparse[2]
+                    diffZ = firstparse[3]
+                # specular color parameter
+                elif (firstparse[0] == 'specularColor'):
+                    specX = firstparse[1]
+                    specY = firstparse[2]
+                    specZ = firstparse[3]
+                # diffuse color parameter
+                elif (firstparse[0] == 'shinines'):
+                    shiny = firstparse[1]
+                first = fo.readline()   
 
         # entering the Coordinate subparameter
         if (len(firstparse) != 0 and (firstparse[0] == 'Coordinate')):

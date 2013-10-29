@@ -269,6 +269,32 @@ while (first != ''):
             transformInter = np.dot(perspectiveProj, np.linalg.inv(cameraMat))
             transformMat = np.dot(transformInter, totaltransform)
 
+        # entering the Material subparameter
+        if (len(firstparse) != 0 and (firstparse[0] == 'Material')):
+            first = fo.readline()
+            # if there is a blank line, read another main parameter
+            while (first.strip() != ):
+                firstparse = parameter.parseString(first)
+                # ambient color parameter
+                if (firstparse[0] == 'ambientColor'):
+                    ambX = firstparse[1]
+                    ambY = firstparse[2]
+                    ambZ = firstparse[3]
+                # diffuse color parameter
+                elif (firstparse[0] == 'diffuseColor'):
+                    diffX = firstparse[1]
+                    diffY = firstparse[2]
+                    diffZ = firstparse[3]
+                # specular color parameter
+                elif (firstparse[0] == 'specularColor'):
+                    specX = firstparse[1]
+                    specY = firstparse[2]
+                    specZ = firstparse[3]
+                # diffuse color parameter
+                elif (firstparse[0] == 'shinines'):
+                    shiny = firstparse[1]
+                first = fo.readline()   
+
         # entering the Coordinate subparameter
         if (len(firstparse) != 0 and (firstparse[0] == 'Coordinate')):
             first = fo.readline()
