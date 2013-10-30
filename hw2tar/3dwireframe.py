@@ -111,12 +111,7 @@ comma = pp.Literal(",")
 # Optional added for the additional number for rotation
 parameter = pp.Optional(pp.Word( pp.alphas )) + pp.Optional(leftBracket) + \
             pp.Optional(leftBrace) + pp.Optional(rightBracket) + \
-	        pp.Optional(rightBrace) + pp.Optional(number) + pp.Optional(comma) + \
-            pp.Optional(number) + pp.Optional(comma) + pp.Optional(number) + \
-            pp.Optional(comma) + pp.Optional(number) + pp.Optional(comma) + \
-            pp.Optional(number) + pp.Optional(comma) + pp.Optional(number) + \
-            pp.Optional(comma) + pp.Optional(number) + pp.Optional(comma) + \
-            pp.Optional(number)
+	        pp.Optional(rightBrace) + pp.ZeroOrMore(number + pp.Optional(comma))
 
 # make a list of all the pixels of the window
 pixel = [0]*xRes*yRes
@@ -142,7 +137,6 @@ while (first != ''):
         # if there is a blank line, read another main parameter
         while (first.strip() != ''):
             firstparse = parameter.parseString(first)
-
             # position parameter
             if (firstparse[0] == 'position'):
                 translateX = firstparse[1]
@@ -327,8 +321,15 @@ while (first != ''):
                     k = firstparse[i]
                     # if the element is a comma, bracket, or coordIndex, then move on to next element
                     while ((k == ',') or (k == '[') or (k == ']') or (k == 'coordIndex')):
-                        i += 1
-                        k = firstparse[i]
+                        if (i < len(firstparse) - 1):
+                            i += 1
+                            k = firstparse[i]
+                        else:
+                            first = fo.readline()
+                            firstparse = parameter.parseString(first)
+                            i = 0
+                            k = firstparse[i]
+                        
                     # put the 1st point in x1, y1
                     # multiply by 1.0/2.0 because the origin is in the center of the window
                     x1 = int(coordsList[int(3*k)] * xRes * 1.0/2.0)
@@ -342,8 +343,14 @@ while (first != ''):
                         i = 0
                     j = firstparse[i]
                     while (j == ',' or j == '[' or j == ']' or j == 'coordIndex'):
-                        i += 1
-                        j = firstparse[i]
+                        if (i < len(firstparse) - 1):
+                            i += 1
+                            j = firstparse[i]
+                        else:
+                            first = fo.readline()
+                            firstparse = parameter.parseString(first)
+                            i = 0
+                            j = firstparse[i]
 
                     # put the 2nd point in x2, y2
                     x2 = int(coordsList[int(3*j)] * xRes * 1.0/2.0)
@@ -449,8 +456,14 @@ while (first != ''):
                             i = 0
                         g = firstparse[i]
                         while (g == ',' or g == '[' or g == ']' or g == 'coordIndex'):
-                            i += 1
-                            g = firstparse[i]
+                            if (i < len(firstparse) - 1):
+                                i += 1
+                                g = firstparse[i]
+                            else:
+                                first = fo.readline()
+                                firstparse = parameter.parseString(first)
+                                i = 0
+                                g = firstparse[i]
                     a1 = x1
                     b1 = y1
                     a2 = x3

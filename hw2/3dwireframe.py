@@ -30,6 +30,8 @@ def bresenham(a1, b1, a2, b2, xlen, ylen):
     dy = b2 - b1
     dxdy = b2 - b1 + a1 - a2
     F = b2 - b1 + a1 - a2
+    print "the coordinates of 1st point are: (", a1, ", ", b1, ")"
+    print "the coordinates of 2nd point are: (", a2, ", ", b2, ")"
     for i in range(a1, a2 + 1):
         pixel[(ylen/2 - y - 1)*xlen + i + xlen/2 - 1] = 1
         if(F < 0):
@@ -46,6 +48,8 @@ def bresenhamG1(a1, b1, a2, b2, xlen, ylen):
     dy = a2 - a1
     dxdy = a2 - a1 + b1 - b2
     F = a2 - a1 + b1 - b2
+    print "the coordinates of 1st point are: (", a1, ", ", b1, ")"
+    print "the coordinates of 2nd point are: (", a2, ", ", b2, ")"
     for i in range(b1, b2 + 1):
         pixel[(xlen/2 - i - 1)*xlen + (y + ylen/2) - 1] = 1
         if(F < 0):
@@ -63,6 +67,8 @@ def bresenhamNeg(a1, b1, a2, b2, xlen, ylen):
     dy = b1 - b2
     dxdy = b1 - b2 + a1 - a2
     F = b1 - b2 + a1 - a2
+    print "the coordinates of 1st point are: (", a1, ", ", b1, ")"
+    print "the coordinates of 2nd point are: (", a2, ", ", b2, ")"
     for i in range(-1*a2, -1*a1 + 1):
         # minus 1 because of it starts at 0
         pixel[(ylen/2 - y - 1)*xlen + xlen/2 - i - 1] = 1
@@ -80,6 +86,8 @@ def bresenhamNegG1(a1, b1, a2, b2, xlen, ylen):
     dy = a2 - a1
     dxdy = a2 - a1 + b2 - b1
     F = a2 - a1 + b2 - b1
+    print "the coordinates of 1st point are: (", a1, ", ", b1, ")"
+    print "the coordinates of 2nd point are: (", a2, ", ", b2, ")"
     for i in range(b2, b1 + 1):
         pixel[(xlen/2 - i - 1)*xlen + ylen/2 - y - 1] = 1
         if(F < 0):
@@ -99,7 +107,7 @@ yRes = int(sys.argv[2])
 
 # define grammar
 # number is float form
-number = pp.Regex(r"[-+]?([0-9]*\.[0-9]+|[0-9]+)")
+number = pp.Regex(r"[-+]?([0-9]*\.[0-9]*|[0-9]+)")
 number.setParseAction(lambda toks:float(toks[0]))
 
 leftBrace = pp.Literal("{")
@@ -137,7 +145,6 @@ while (first != ''):
         # if there is a blank line, read another main parameter
         while (first.strip() != ''):
             firstparse = parameter.parseString(first)
-            print firstparse
             # position parameter
             if (firstparse[0] == 'position'):
                 translateX = firstparse[1]
@@ -150,7 +157,6 @@ while (first != ''):
                 y = firstparse[2]
                 z = firstparse[3]
                 angle = firstparse[4]
-                print "the params are: ", y
 
             # near distance parameter
             elif (firstparse[0] == 'nearDistance'):
@@ -320,7 +326,6 @@ while (first != ''):
 
                 # Go through the line
                 while (i < len(firstparse)):
-                    print firstparse
                     k = firstparse[i]
                     # if the element is a comma, bracket, or coordIndex, then move on to next element
                     while ((k == ',') or (k == '[') or (k == ']') or (k == 'coordIndex')):
@@ -335,7 +340,6 @@ while (first != ''):
                         
                     # put the 1st point in x1, y1
                     # multiply by 1.0/2.0 because the origin is in the center of the window
-                    print "this is the parsed k: ", k
                     x1 = int(coordsList[int(3*k)] * xRes * 1.0/2.0)
                     y1 = int(coordsList[int(3*k) + 1] * yRes * 1.0/2.0)
 
