@@ -1,0 +1,7 @@
+are the xmin and xmax -1 and 1?
+
+is my lighting function doing stuff correctly?
+
+for the raster, do I put the rgb data released by the light function where it says data?
+
+

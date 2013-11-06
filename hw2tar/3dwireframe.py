@@ -99,7 +99,7 @@ yRes = int(sys.argv[2])
 
 # define grammar
 # number is float form
-number = pp.Regex(r"[-+]?([0-9]*\.[0-9]+|[0-9]+)")
+number = pp.Regex(r"[-+]?([0-9]*\.[0-9]*|[0-9]+)([Ee][+-]?[0-9]+)?")
 number.setParseAction(lambda toks:float(toks[0]))
 
 leftBrace = pp.Literal("{")

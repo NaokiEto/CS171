@@ -99,7 +99,7 @@ yRes = int(sys.argv[2])
 
 # define grammar
 # number is float form
-number = pp.Regex(r"[-+]?([0-9]*\.[0-9]*|[0-9]+)([Ee][+-]?[0-9]+)?")
+number = pp.Regex(r"[-+]?([0-9]*\.[0-9]+|[0-9]+)")
 number.setParseAction(lambda toks:float(toks[0]))
 
 leftBrace = pp.Literal("{")
@@ -221,15 +221,11 @@ while (first != ''):
                 # rotation
                 elif (firstparse[0] == 'rotation'):
                     rotate = firstparse[0]
-                    rX = float(firstparse[1])
-                    rY = float(firstparse[2])
-                    rZ = float(firstparse[3])
-
-                    normalizedrX = rX/(sqrt(rX**2 + rY**2 + rZ**2))
-                    normalizedrY = rY/sqrt(rX**2 + rY**2 + rZ**2)
-                    normalizedrZ = rZ/sqrt(rX**2 + rY**2 + rZ**2)
-                    rAngle = float(firstparse[4])
-                    rotationSep = rotationMatrix(normalizedrX, normalizedrY, normalizedrZ, rAngle)
+                    rX = firstparse[1]
+                    rY = firstparse[2]
+                    rZ = firstparse[3]
+                    rAngle = firstparse[4]
+                    rotationSep = rotationMatrix(rX, rY, rZ, rAngle)
                 # scale factor
                 elif (firstparse[0] == 'scaleFactor'):
                     scaleFactor = firstparse[0]
