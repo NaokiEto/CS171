@@ -5,9 +5,122 @@ import sys
 import os
 import numpy as np
 from math import*
-from lightingfunction import lightfunc
-from raster import *
-from copy import*
+import getopt
+#from lightingfunction import lightfunc
+#from raster import *
+
+opts,operands = getopt.getopt(sys.argv[4:], "e", ["eyelight"])
+
+print opts
+print operands
+
+dimlight = 0
+
+for option in opts:
+    print option[0]
+    if option[0] == '--eyelight':
+        print "hello"
+        dimlight = 1
+
+def zeroclip(X):
+    #print "the dimensions are: ", X.shape
+    zeroclist = np.zeros(X.shape[0])
+    for i in range(len(X)):
+        if (X[i] > 0.0):
+            zeroclist[i] = X[i]
+    return zeroclist
+
+def oneclip(X):
+    oneclist = np.zeros(X.shape[0])
+    for i in range(len(X)):
+        if (X[i] < 1.0):
+            oneclist[i] = X[i]
+        else:
+            oneclist[i] = 1.0
+    return oneclist
+
+def unit(x):
+    if np.linalg.norm(x) != 0.0:
+        return x/np.linalg.norm(x)
+    else:
+        return 0.0
+
+#unit(x) = x / |x| when |x| != 0.0 else 0.0
+
+def lightfunc(n, v, material, lights, camerapos):
+    # let n = surface normal (nx,ny,nz)
+    # let v = point in space (x,y,z)
+    # let lights = [light0, light1, ... ]
+    # let camerapos = (x,y,z)
+    
+    scolor = material[2]  # specular (r,g,b)
+    dcolor = material[1]  # diffuse (r,g,b)
+    acolor = material[0]  # ambient (r,g,b)
+    shiny =  material[3][0]  # shiny (a scalar, an exponent >= 0)
+
+    #print "the shininess is: ", material[3]
+    #print "the ambient color is: ", acolor
+    #print "the diffuse color is: ", dcolor
+    #print "the specular color is: ", scolor
+
+    # start off the diffuse and specular at pitch black
+    diffuse = np.array([0.0, 0.0, 0.0])
+    specular = np.array([0.0, 0.0, 0.0])
+    # copy the ambient color (for the eyelight ex/cred code, you 
+    # can change it here to rely on distance from the camera)
+    ambient = acolor
+
+    #print lights.shape[0]
+
+    for i in range(1, (lights.shape[0] - 1)/2 + 1):
+
+        # get the light position and color from the light
+        # let lx = light position (x,y,z)
+        # let lc = light color (r,g,b)
+        lx = lights[2*i - 1]
+        lc = lights[2*i]
+
+        #print "the lx is: ", lx
+
+        #print "the lc is: "
+        #print lc
+
+        # first calculate the addition this light makes
+        # to the diffuse part
+
+        #print "the matrices are: ", lc
+        #print np.inner(n, unit(lx -v))
+        ddiffuse = zeroclip(np.dot(lc, (np.inner(n, unit(lx - v)))))
+        # print "the ddiffuse is: ", ddiffuse
+        # accumulate that
+        diffuse += ddiffuse
+
+        # calculate the specular exponent
+        k = np.inner(n, unit(unit(camerapos - v) + unit(lx - v)))
+        if k <= 0:
+            k = 0
+        # calculate the addition to the specular highlight
+        # k^shiny is a scalar, lc is (r,g,b)
+        dspecular = zeroclip(pow(k, shiny) * lc)
+
+        # print "the dspecular is: ", dspecular
+        # acumulate that
+        specular += dspecular
+
+    #print "the diffuse is: ", diffuse
+
+    # after working on all the lights, clamp the diffuse value to 1
+    d = oneclip(diffuse)
+    # note that d,dcolor,specular and scolor are all (r,g,b).
+    # * here represents component-wise multiplication
+    # print d
+    
+    #print dcolor
+    #print specular
+    #print scolor
+    #print "The specular is: ", specular
+    rgb = oneclip(ambient + d*dcolor + specular*scolor)
+    return rgb
 
 def rotationMatrix(a, b, c, theta):
     return np.array([[a**2 + (1 - a**2)*cos(theta), a*b*(1-cos(theta)) - c*sin(theta), a*c*(1-cos(theta)) + b*sin(theta), 0],
@@ -39,6 +152,10 @@ xRes = int(sys.argv[2])
 # y dimension size
 yRes = int(sys.argv[3])
 
+#if (len(sys.argv) == 5):
+# eyelight parameter that adds a dim light
+    
+
 # define grammar
 # number is float form
 # does +/-, 0., .2, and exponentials
@@ -60,39 +177,139 @@ parameter = pp.Optional(pp.Word( pp.alphas )) + pp.Optional(leftBracket) + \
 pixel = [0]*xRes*yRes
 
 # make a list of the z-buffers of the pixels
-zed = [float("inf")]*xRes*yRes
+zed = [float(1000)]*xRes*yRes
 
-# Draw pixel function, which takes an x-coordinate pixel, y-coordinate pixel,
-# and the color and add it to the pixel list as the color tuple
-def drawPixels(x, y, colortupleWithZ, shadet, mat, lights, campos, windowXMin, windowXMax, windowYMin, windowYMax, matrix):
-    # in the case where we have phong shading, use the light function
-    if (shadet == 2 and zed[(yRes - y - 1)*xRes + x - 1] > colortupleWithZ[2]):
-        
-        #print "the normal xyz is: ", colortupleWithZ[3], ", ", colortupleWithZ[4], ", ", colortupleWithZ[5]
-        ndcX = float(x)/float(xRes) * (windowXMax - windowXMin) + windowXMin
-        ndcY = float(y)/float(yRes) * (windowYMax - windowYMin) + windowYMin
-        newpoint = np.dot(matrix, np.array([[ndcX], 
-                                            [ndcY], 
-                                            [colortupleWithZ[2]], 
-                                            [1.0]]))
-        #print newpoint
-        # this is for the norms
-        newnorm = np.array([colortupleWithZ[3], colortupleWithZ[4], colortupleWithZ[5]])
-        # this is for the point in light function
-        realpt = np.array([newpoint.item(0)/newpoint.item(3), newpoint.item(1)/newpoint.item(3), newpoint.item(2)/newpoint.item(3)])
-        #print realpt
-        rgb = lightfunc(newnorm/np.linalg.norm(newnorm), realpt, mat, lights, campos)
+# Must be called before any drawing occurs.  Initializes window variables for
+#  proper integer pixel coordinates.
+def initDraw(xMin, xMax, yMin, yMax, xr, yr):
+    global windowXMin, windowXMax, windowYMin, windowYMax, xRes, yRes
+    windowXMin = xMin
+    windowXMax = xMax
+    windowYMin = yMin
+    windowYMax = yMax
+    xRes = xr
+    yRes = yr
 
-        #print "the rgb is: ", rgb
+# Helper function to convert a real x position into an integer pixel coord.
+def getPixelX(x):
+    return int((x - windowXMin) / (windowXMax - windowXMin) * xRes)
 
-        pixel[(yRes - y - 1)*xRes + x - 1] = [rgb[0], rgb[1], rgb[2]]
-        #print (yRes - y - 1)*xRes + x - 1
-        zed[(yRes - y - 1)*xRes + x - 1] = deepcopy(colortupleWithZ[2])
-    # print "the index in question is: ", (yRes - y)*xRes + x
-    # the format of colortuplewithZ is (X, Y, Z, R, G, B), where R, G, B is the color
-    elif (shadet != 2 and zed[(yRes - y - 1)*xRes + x - 1] > colortupleWithZ[2]):
-        pixel[(yRes - y - 1)*xRes + x - 1] = [colortupleWithZ[3], colortupleWithZ[4], colortupleWithZ[5]]
-        zed[(yRes - y - 1)*xRes + x - 1] = deepcopy(colortupleWithZ[2])
+# Helper function to convert a real y position into an integer pixel coord.
+def getPixelY(y):
+    return int((y - windowYMin) / (windowYMax - windowYMin) * yRes)
+
+# Helper function f as defined in the course text.  Not sure exactly what
+#  it means, on a conceptual level.
+def fhelp(vert0, vert1, x, y):
+    x0 = vert0[0]
+    y0 = vert0[1]
+    x1 = vert1[0]
+    y1 = vert1[1]
+    return float((y0 - y1) * x + (x1 - x0) * y + x0 * y1 - x1 * y0)
+
+
+# The meat of the package.  Takes three vertices in arbitrary order, with each
+#  vertex consisting of an x and y value in the first two data positions, and
+#  any arbitrary amount of extra data, and calls the passed in function on
+#  every resulting pixel, with all data values magically interpolated.
+# The function, drawPixel, should have the form
+#    drawPixel(x, y, data)
+# where x and y are integer pixel coordinates, and data is the interpolated
+# data in the form of a tuple. 
+# verts should be a (3-element) list of tuples, the first 2 elements in each
+# tuple being X and Y, and the remainder whatever other data you want
+# interpolated such as normal coordinates or rgb values
+def raster(verts, shadingType, material, lights, campos, matrix):
+    xMin = xRes + 1
+    yMin = yRes + 1
+    xMax = yMax = -1
+
+    coords = [ (getPixelX(vert[0]), getPixelY(vert[1])) for vert in verts ]
+
+    coordsX = verts[0]
+    coordsY = verts[1]
+    coordsZ = verts[2]
+
+    lenX = len(coordsX)
+
+    # find the bounding box
+    for c in coords:
+        if c[0] < xMin: xMin = c[0]
+        if c[1] < yMin: yMin = c[1]
+        if c[0] > xMax: xMax = c[0]
+        if c[1] > yMax: yMax = c[1]
+
+    # normalizing values for the barycentric coordinates
+    # not sure exactly what's going on here, so read the textbook
+    fAlpha = fhelp(coords[1], coords[2], coords[0][0], coords[0][1])
+    fBeta = fhelp(coords[2], coords[0], coords[1][0], coords[1][1])
+    fGamma = fhelp(coords[0], coords[1], coords[2][0], coords[2][1])
+
+    if abs(fAlpha) < .0001 or abs(fBeta) < .0001 or abs(fGamma) < .0001:
+        return
+
+    print "checkpoint"
+
+    # go over every pixel in the bounding box
+    for y in range(max(yMin, 0), min(yMax, yRes)):
+        for x in range(max(xMin, 0), min(xMax, xRes)):
+            # calculate the pixel's barycentric coordinates
+            alpha = fhelp(coords[1], coords[2], x, y) / fAlpha
+            beta = fhelp(coords[2], coords[0], x, y) / fBeta
+            gamma = fhelp(coords[0], coords[1], x, y) / fGamma
+
+            #print "the alpha, beta and gamma are: ", alpha, ", ", beta, ", ", gamma
+
+            data = [-1000]*3
+
+            # if the coordinates are positive, do the next check
+            if alpha >= 0 and beta >= 0 and gamma >= 0:
+                # interpolate the data for either gouraud or phong
+                if (shadingType != 0):
+                    data = [0]*lenX
+                    for i in range(lenX):
+                        data[i] = alpha * coordsX[i] + beta * coordsY[i] + gamma * coordsZ[i]
+                # interpolate the data for flat
+                elif (shadingType == 0):
+                    data = [0]*6
+                    for i in range(3):
+                        data[i] = alpha * coordsX[i] + beta * coordsY[i] + gamma * coordsZ[i]
+                    for i in range(3, 6):
+                        data[i] = coordsX[i]
+
+                # and finally, draw the pixel
+                if data[2] >= -1:
+
+                    # in the case where we have phong shading, use the light function
+                    if (shadingType == 2 and zed[(yRes - y - 1)*xRes + x - 1] > data[2]):
+                        
+                        ndcX = float(x)/float(xRes) * (windowXMax - windowXMin) + windowXMin
+                        ndcY = float(y)/float(yRes) * (windowYMax - windowYMin) + windowYMin
+                        newpoint = np.dot(matrix, np.array([[ndcX], 
+                                                            [ndcY], 
+                                                            [data[2]], 
+                                                            [1.0]]))
+                        #print newpoint
+                        # this is for the norms
+                        newnorm = np.array([data[3], data[4], data[5]])
+                        # this is for the point in light function
+                        realpt = np.array([newpoint.item(0)/newpoint.item(3), 
+                                           newpoint.item(1)/newpoint.item(3), 
+                                           newpoint.item(2)/newpoint.item(3)])
+                        #print realpt
+                        rgb = lightfunc(newnorm/np.linalg.norm(newnorm), realpt, material, lights, campos)
+
+                        #print "the rgb is: ", rgb
+
+                        pixel[(yRes - y - 1)*xRes + x - 1] = [rgb[0], rgb[1], rgb[2]]
+                        #print (yRes - y - 1)*xRes + x - 1
+                        zed[(yRes - y - 1)*xRes + x - 1] = data[2]
+                    # print "the index in question is: ", (yRes - y)*xRes + x
+                    # the format of colortuplewithZ is (X, Y, Z, R, G, B), where R, G, B is the color
+                    elif (shadingType != 2 and zed[(yRes - y - 1)*xRes + x - 1] > data[2]):
+                        pixel[(yRes - y - 1)*xRes + x - 1] = [data[3], data[4], data[5]]
+                        zed[(yRes - y - 1)*xRes + x - 1] = data[2]
+
 # split the text between file name and file extension
 fileName, fileExtension = os.path.splitext(os.readlink('/proc/self/fd/0'))
 
@@ -106,6 +323,10 @@ first = fo.readline()
 
 lights = np.zeros([1, 3])
 
+cameraX = 0
+cameraY = 0
+cameraZ = 0
+
 # as long as we don't reach the end of the file
 while (first != ''):
     firstparse = parameter.parseString(first)
@@ -118,10 +339,10 @@ while (first != ''):
             firstparse = parameter.parseString(first)
             # position parameter
             if (firstparse[0] == 'position'):
-                translateX = firstparse[1]
-                translateY = firstparse[2]
-                translateZ = firstparse[3]
-                campos = np.array([translateX, translateY, translateZ])
+                cameraX = firstparse[1]
+                cameraY = firstparse[2]
+                cameraZ = firstparse[3]
+                campos = np.array([cameraX, cameraY, cameraZ])
 
             # orientation paramter
             elif (firstparse[0] == 'orientation'):
@@ -157,7 +378,7 @@ while (first != ''):
             first = fo.readline()
 
         # translation matrix (for position of camera)
-        translateCam = translateMatrix(translateX, translateY, translateZ)
+        translateCam = translateMatrix(cameraX, cameraY, cameraZ)
 
         # rotation matrix (for orientation of camera)
         rotationCam = rotationMatrix(x, y, z, angle)
@@ -171,6 +392,10 @@ while (first != ''):
                                     [0, 2.0*n / (t - b), float(t + b) / (t - b), 0],
                                     [0, 0, -1.0*(f + n)/(f - n), -2.0*(f*n)/(f - n)],
                                     [0, 0, -1, 0]])
+
+    totalred = 0
+    totalgreen = 0
+    totalblue = 0
 
     # if we reach PointLight parameter
     while (len(firstparse) != 0 and (firstparse[0] == 'PointLight')):
@@ -195,6 +420,9 @@ while (first != ''):
                 red = firstparse[1]
                 green = firstparse[2]
                 blue = firstparse[3]
+                totalred += red
+                totalgreen += green
+                totalblue += blue
             first = fo.readline()
         # print "light location is: ", lightX, ", ", lightY, ", ", lightZ
         lights = np.append(lights,[[lightX, lightY, lightZ]], axis = 0)
@@ -208,17 +436,17 @@ while (first != ''):
     while (len(firstparse) != 0 and (firstparse[0] == 'Separator')):
         first = fo.readline()
         firstparse = parameter.parseString(first)
+
+        # add the dimlights if enabled
+        if (dimlight == 1):
+            lights = np.append(lights, [[cameraX - 1, cameraY, cameraZ]], axis = 0)
+            lights = np.append(lights, [[0.2*totalred, 0.2*totalgreen, 0.2*totalblue]], axis = 0)
+            dimlight = 0
         
         # transform multiplication, initialized to identity matrix
-        totaltransform = np.array([[1.0, 0.0, 0.0, 0.0],
-                                   [0.0, 1.0, 0.0, 0.0],
-                                   [0.0, 0.0, 1.0, 0.0],
-                                   [0.0, 0.0, 0.0, 1.0]])
+        totaltransform = np.identity(4)
 
-        totalNorm = np.array([[1.0, 0.0, 0.0, 0.0],
-                              [0.0, 1.0, 0.0, 0.0],
-                              [0.0, 0.0, 1.0, 0.0],
-                              [0.0, 0.0, 0.0, 1.0]])
+        totalNorm = np.identity(4)
 
         # if we reach the Transform sub-parameter
         while (len(firstparse) != 0 and (firstparse[0] == 'Transform')):
@@ -226,6 +454,7 @@ while (first != ''):
             firstparse = parameter.parseString(first)
             
             translate = rotate = scaleFactor = ''
+
             # as long as we aren't at the end of the Transform parameter
             while (firstparse[0] != '}'):
 
@@ -577,7 +806,6 @@ while (first != ''):
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
                 if (firstparse[0] == 'normalIndex'):
-                    print "ta-da"
                     i = 0
                     while(i < len(firstparse)):
                         k = firstparse[i]
@@ -614,6 +842,7 @@ while (first != ''):
             rgbList = [0]
 
             j = 0
+
             while (j < len(indexforboth)):
                 oneface = []
 
@@ -655,11 +884,6 @@ while (first != ''):
                     normY2 = vectorsList[int(3*normIdx2) + 1]
                     normZ2 = vectorsList[int(3*normIdx2) + 2]
 
-                    #normalizedX2 = normX2/(sqrt(pow(normX2, 2) + pow(normY2, 2) + pow(normZ2, 2)))
-                    #normalizedY2 = normY2/(sqrt(pow(normX2, 2) + pow(normY2, 2) + pow(normZ2, 2)))
-                    #normalizedZ2 = normZ2/(sqrt(pow(normX2, 2) + pow(normY2, 2) + pow(normZ2, 2)))
-
-
                     pointX2 = worldcoords[int(3*ptsIdx2)]
                     pointY2 = worldcoords[int(3*ptsIdx2) + 1]
                     pointZ2 = worldcoords[int(3*ptsIdx2) + 2]
@@ -678,10 +902,6 @@ while (first != ''):
                     normY3 = vectorsList[int(3*normIdx3) + 1]
                     normZ3 = vectorsList[int(3*normIdx3) + 2]
 
-                    #normalizedX3 = normX3/(sqrt(pow(normX3, 2) + pow(normY3, 2) + pow(normZ3, 2)))
-                    #normalizedY3 = normY3/(sqrt(pow(normX3, 2) + pow(normY3, 2) + pow(normZ3, 2)))
-                    #normalizedZ3 = normZ3/(sqrt(pow(normX3, 2) + pow(normY3, 2) + pow(normZ3, 2)))
-
                     pointX3 = worldcoords[int(3*ptsIdx3)]
                     pointY3 = worldcoords[int(3*ptsIdx3) + 1]
                     pointZ3 = worldcoords[int(3*ptsIdx3) + 2]
@@ -698,10 +918,7 @@ while (first != ''):
                     #print "the norm is: ", norm
                     #print "the point is: ", point
 
-                    NDCtoWorld = np.array([[1.0, 0.0, 0.0, 0.0],
-                                           [0.0, 1.0, 0.0, 0.0],
-                                           [0.0, 0.0, 1.0, 0.0],
-                                           [0.0, 0.0, 0.0, 1.0]])
+                    NDCtoWorld = np.identity(4)
 
                     if (shade == 2):
 
@@ -715,7 +932,8 @@ while (first != ''):
 
                         # matrix to convert from NDC to world space
                         NDCtoWorld = np.dot(cameraMat, np.linalg.inv(perspectiveProj))
-                        raster(listpts, drawPixels, shade, material, lights, campos, NDCtoWorld)
+                        print "ta-da"
+                        raster(listpts, shade, material, lights, campos, NDCtoWorld)
                     
                     elif (shade == 1):
                         #print "the camera position: ", campos
@@ -739,7 +957,7 @@ while (first != ''):
                                    [rasterX2, rasterY2, rasterZ2, rgbpoint2[0], rgbpoint2[1], rgbpoint2[2]], 
                                    [rasterX3, rasterY3, rasterZ3, rgbpoint3[0], rgbpoint3[1], rgbpoint3[2]]]
 
-                        raster(listpts, drawPixels, shade, material, lights, campos, NDCtoWorld)              
+                        raster(listpts, shade, material, lights, campos, NDCtoWorld)              
 
                     #print "the normal avg normalized is: ", normAvg/np.linalg.norm(normAvg)
                     #print "the point average is: ", pointAvg      
@@ -762,30 +980,16 @@ while (first != ''):
                         #rgbList.append(rgb)
                         #print rgb
 
-
                         listpts = [[rasterX1, rasterY1, rasterZ1, rgb[0], rgb[1], rgb[2]], 
                                    [rasterX2, rasterY2, rasterZ2, rgb[0], rgb[1], rgb[2]], 
                                    [rasterX3, rasterY3, rasterZ3, rgb[0], rgb[1], rgb[2]]]
-                        raster(listpts, drawPixels, shade, material, lights, campos, NDCtoWorld)
+                        raster(listpts, shade, material, lights, campos, NDCtoWorld)
                     # move to the next point
                     i += 1
                     print "NEXT POINT"
                 # pass through the -1, which we left at earlier in the while loop
                 j += 1
             #print rgbList
-
-            ''''
-            # go through the rasterization of the points
-            for t in range(len(coordPoints)):
-                pt1 = coordPoints[t]
-                rgb1 = rgbList[t]
-                pt2 = coordPoints[t+1]
-                rgb2 = rgbList[t+1]
-                pt3 = coordPoints[t+2]
-                rgb3 = rgbList[t+2]
-                listpts = [(pt1, rgb1), (pt2, rgb2), (pt3, rgb3)]
-                raster(listpts, drawPixels)
-            '''
                 
         first = fo.readline()
     first = fo.readline()

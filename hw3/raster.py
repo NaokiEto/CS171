@@ -45,12 +45,22 @@ def raster(verts, drawPixel, shadingType, material, lights, campos, matrix):
 
     coords = [ (getPixelX(vert[0]), getPixelY(vert[1])) for vert in verts ]
 
+    coordsX = verts[0]
+    coordsY = verts[1]
+    coordsZ = verts[2]
+
+    lenX = len(coordsX)
+
     # find the bounding box
     for c in coords:
         if c[0] < xMin: xMin = c[0]
         if c[1] < yMin: yMin = c[1]
         if c[0] > xMax: xMax = c[0]
         if c[1] > yMax: yMax = c[1]
+
+    print "the yMin is: ", yMin
+    print "the yMax is: ", yMax
+    print "the xMin is: ", xMin
 
     # normalizing values for the barycentric coordinates
     # not sure exactly what's going on here, so read the textbook
@@ -60,6 +70,8 @@ def raster(verts, drawPixel, shadingType, material, lights, campos, matrix):
 
     if abs(fAlpha) < .0001 or abs(fBeta) < .0001 or abs(fGamma) < .0001:
         return
+
+    print "checkpoint"
 
     # go over every pixel in the bounding box
     for y in range(max(yMin, 0), min(yMax, yRes)):
@@ -73,17 +85,18 @@ def raster(verts, drawPixel, shadingType, material, lights, campos, matrix):
 
             # if the coordinates are positive, do the next check
             if alpha >= 0 and beta >= 0 and gamma >= 0:
-                data = []
                 # interpolate the data for either gouraud or phong
                 if (shadingType != 0):
-                    for i in range(len(verts[0])):
-                        data.append(alpha * verts[0][i] + beta * verts[1][i] + gamma * verts[2][i])
+                    data = [0]*lenX
+                    for i in range(lenX):
+                        data[i] = alpha * coordsX[i] + beta * coordsY[i] + gamma * coordsZ[i]
                 # interpolate the data for flat
                 elif (shadingType == 0):
+                    data = [0]*6
                     for i in range(3):
-                        data.append(alpha * verts[0][i] + beta * verts[1][i] + gamma * verts[2][i])
+                        data[i] = alpha * coordsX[i] + beta * coordsY[i] + gamma * coordsZ[i]
                     for i in range(3, 6):
-                        data.append(verts[0][i])
+                        data[i] = coordsX[i]
 
                 # and finally, draw the pixel
                 if data[2] >= -1:
