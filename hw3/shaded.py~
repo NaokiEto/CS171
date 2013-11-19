@@ -277,38 +277,38 @@ def raster(verts, shadingType, material, lights, campos, matrix):
                     for i in range(3, 6):
                         data[i] = coordsX[i]
 
-                # and finally, draw the pixel
-                if data[2] >= -1:
+            # and finally, draw the pixel
+            if data[2] >= -1:
 
-                    # in the case where we have phong shading, use the light function
-                    if (shadingType == 2 and zed[(yRes - y - 1)*xRes + x - 1] > data[2]):
-                        
-                        ndcX = float(x)/float(xRes) * (windowXMax - windowXMin) + windowXMin
-                        ndcY = float(y)/float(yRes) * (windowYMax - windowYMin) + windowYMin
-                        newpoint = np.dot(matrix, np.array([[ndcX], 
-                                                            [ndcY], 
-                                                            [data[2]], 
-                                                            [1.0]]))
-                        #print newpoint
-                        # this is for the norms
-                        newnorm = np.array([data[3], data[4], data[5]])
-                        # this is for the point in light function
-                        realpt = np.array([newpoint.item(0)/newpoint.item(3), 
-                                           newpoint.item(1)/newpoint.item(3), 
-                                           newpoint.item(2)/newpoint.item(3)])
-                        #print realpt
-                        rgb = lightfunc(newnorm/np.linalg.norm(newnorm), realpt, material, lights, campos)
+                # in the case where we have phong shading, use the light function
+                if (shadingType == 2 and zed[(yRes - y - 1)*xRes + x - 1] > data[2]):
+                    
+                    ndcX = float(x)/float(xRes) * (windowXMax - windowXMin) + windowXMin
+                    ndcY = float(y)/float(yRes) * (windowYMax - windowYMin) + windowYMin
+                    newpoint = np.dot(matrix, np.array([[ndcX], 
+                                                        [ndcY], 
+                                                        [data[2]], 
+                                                        [1.0]]))
+                    #print newpoint
+                    # this is for the norms
+                    newnorm = np.array([data[3], data[4], data[5]])
+                    # this is for the point in light function
+                    realpt = np.array([newpoint.item(0)/newpoint.item(3), 
+                                       newpoint.item(1)/newpoint.item(3), 
+                                       newpoint.item(2)/newpoint.item(3)])
+                    #print realpt
+                    rgb = lightfunc(newnorm/np.linalg.norm(newnorm), realpt, material, lights, campos)
 
-                        #print "the rgb is: ", rgb
+                    #print "the rgb is: ", rgb
 
-                        pixel[(yRes - y - 1)*xRes + x - 1] = [rgb[0], rgb[1], rgb[2]]
-                        #print (yRes - y - 1)*xRes + x - 1
-                        zed[(yRes - y - 1)*xRes + x - 1] = data[2]
-                    # print "the index in question is: ", (yRes - y)*xRes + x
-                    # the format of colortuplewithZ is (X, Y, Z, R, G, B), where R, G, B is the color
-                    elif (shadingType != 2 and zed[(yRes - y - 1)*xRes + x - 1] > data[2]):
-                        pixel[(yRes - y - 1)*xRes + x - 1] = [data[3], data[4], data[5]]
-                        zed[(yRes - y - 1)*xRes + x - 1] = data[2]
+                    pixel[(yRes - y - 1)*xRes + x - 1] = [rgb[0], rgb[1], rgb[2]]
+                    #print (yRes - y - 1)*xRes + x - 1
+                    zed[(yRes - y - 1)*xRes + x - 1] = data[2]
+                # print "the index in question is: ", (yRes - y)*xRes + x
+                # the format of colortuplewithZ is (X, Y, Z, R, G, B), where R, G, B is the color
+                elif (shadingType != 2 and zed[(yRes - y - 1)*xRes + x - 1] > data[2]):
+                    pixel[(yRes - y - 1)*xRes + x - 1] = [data[3], data[4], data[5]]
+                    zed[(yRes - y - 1)*xRes + x - 1] = data[2]
 
 # split the text between file name and file extension
 fileName, fileExtension = os.path.splitext(os.readlink('/proc/self/fd/0'))
@@ -729,8 +729,7 @@ while (first != ''):
                     worldPoints.append(k)
                     index += 1
                         
-                    # put the 1st point in x1, y1
-                    # multiply by 1.0/2.0 because the origin is in the center of the window
+                    # if k does not equal to 1, append the coordinates
                     if (k != -1):
                         x1 = coordsList[int(3*k)]
                         y1 = coordsList[int(3*k) + 1]

@@ -729,8 +729,7 @@ while (first != ''):
                     worldPoints.append(k)
                     index += 1
                         
-                    # put the 1st point in x1, y1
-                    # multiply by 1.0/2.0 because the origin is in the center of the window
+                    # if k does not equal to 1, append the coordinates
                     if (k != -1):
                         x1 = coordsList[int(3*k)]
                         y1 = coordsList[int(3*k) + 1]
