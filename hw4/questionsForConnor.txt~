@@ -1,0 +1,5 @@
+so i call glDisplayfunc(draw1) and glMainLoop() at the end.
+
+am I suppose to save the arrays for vertices and norms for each separator block, and then pass them into the draw1 function? if so, how do I save those transformation matrices that are for each separator block? 
+
+Do I do some type of glPush - Pop thing?
