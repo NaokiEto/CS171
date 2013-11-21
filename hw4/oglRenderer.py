@@ -45,19 +45,22 @@ def mouseCB(button, state, x, y):
     global mouseRightDown 
     mouseRightDown = False
 
+    global shiftPressed
+    shiftPressed = False
+
     if(button == GLUT_LEFT_BUTTON):
         if(state == GLUT_DOWN):
             mouseLeftDown = True
         elif(state == GLUT_UP):
             mouseLeftDown = False
 
-    elif(button == GLUT_RIGHT_BUTTON):
+    elif(button == GLUT_MIDDLE_BUTTON):
         if(state == GLUT_DOWN):
             mouseRightDown = True
         elif(state == GLUT_UP):
             mouseRightDown = False
 
-    elif(button == GLUT_MIDDLE_BUTTON):
+    elif(button == GLUT_RIGHT_BUTTON):
         if(state == GLUT_DOWN):
             mouseMiddleDown = True
             print "mouse Middle is down!"
@@ -86,6 +89,12 @@ def mouseCB(button, state, x, y):
     newmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
     print "new mvm is: ", newmvm
     '''
+    mod = glutGetModifiers();
+    if (mod == GLUT_ACTIVE_SHIFT):
+        print "shift is activated!"
+        shiftPressed = True
+
+
 def mouseMotionCB(x, y):
     mvm = glGetFloatv(GL_MODELVIEW_MATRIX)
     print "mvm is: ", mvm
@@ -102,7 +111,7 @@ def mouseMotionCB(x, y):
     if(mouseRightDown):
         #cameraDistance -= (y - mouseY) * 0.2
         mouseY = y
-    if (mouseMiddleDown):
+    if (mouseMiddleDown and shiftPressed == False):
         print "middle middle middle activated!"
         mouseX = x
         mouseY = y
@@ -119,11 +128,9 @@ def mouseMotionCB(x, y):
         lastX = mouseX
         lastY = mouseY
 
-        glTranslatef(dx/float(100), dy/float(100), 0)
+        glTranslatef(dx/float(100), -1*dy/float(100), 0)
         glRotatef(0, 0, 0, 0)
         glScalef(1.0, 1.0, 1.0)
-        cameraX = mouseX
-        cameraY = mouseY
         #glRotatef(rotateAngle*180.0/pi, rotateX, rotateY, rotateZ)
         #glScalef(scaleX, scaleY, scaleZ)
 
@@ -134,6 +141,16 @@ def mouseMotionCB(x, y):
 
     newmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
     #print "new mvm is: ", newmvm
+
+    if (mouseMiddleDown and shiftPressed):
+        mouseX = x
+        mouseY = y
+        global lastY
+        dy = mouseY - lastY
+        lastY = mouseY
+        glTranslatef(0, 0, -1*dy/float(100))
+        glRotatef(0, 0, 0, 0)
+        glScalef(1.0, 1.0, 1.0)
     
     # tell GLUT to call the redrawing function, in this case redraw()
     glutPostRedisplay()
@@ -336,11 +353,6 @@ if __name__ == "__main__":
     # these are vertices and norms accumulated for all separators.
     verticesAccum = []
     normsAccum = []
-
-    global lastX
-    lastX = 0
-    global lastY
-    lastY = 0
 
     # as long as we don't reach the end of the file
     while (first != ''):
@@ -549,6 +561,11 @@ if __name__ == "__main__":
                         tX = firstparse[1]
                         tY = firstparse[2]
                         tZ = firstparse[3]
+
+                        global lastX
+                        lastX = (tX + 1)*500.0/2
+                        global lastY
+                        lastY = (tY + 1)*500.0/2
                     # rotation
                     elif (firstparse[0] == 'rotation'):
                         rotate = firstparse[0]
