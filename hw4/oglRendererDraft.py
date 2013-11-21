@@ -3,11 +3,13 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
+#from pyglet.gl import *
 import pyparsing as pp
 import sys
 import os
 import numpy as np
 from math import*
+
 
 # GLUT calls this function when the windows is resized.
 # All we do here is change the OpenGL viewport so it will always draw in the
@@ -38,12 +40,6 @@ def keyfunc(key, x, y):
 def mouseCB(button, state, x, y):
     mouseX = x
     mouseY = y
-    global mouseMiddleDown 
-    mouseMiddleDown = False
-    global mouseLeftDown 
-    mouseLeftDown = False
-    global mouseRightDown 
-    mouseRightDown = False
 
     if(button == GLUT_LEFT_BUTTON):
         if(state == GLUT_DOWN):
@@ -60,94 +56,34 @@ def mouseCB(button, state, x, y):
     elif(button == GLUT_MIDDLE_BUTTON):
         if(state == GLUT_DOWN):
             mouseMiddleDown = True
-            print "mouse Middle is down!"
         elif(state == GLUT_UP):
             mouseMiddleDown = False
-            print "wut, this should not be happening"
-    print "the state of mouseMiddleDown is: ", mouseMiddleDown
-    '''
-    mvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    print "mvm is: ", mvm
-    glMatrixMode(GL_MODELVIEW)
-    glLoadIdentity()
 
-
-    glTranslatef(mouseX, mouseY, 0)
-    glRotatef(0, 0, 0, 0)
-    glScalef(1.0, 1.0, 1.0)
-    #glRotatef(rotateAngle*180.0/pi, rotateX, rotateY, rotateZ)
-    #glScalef(scaleX, scaleY, scaleZ)
-
-    intermedmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    print "intermediate mvm is: ", intermedmvm
-
-    glMultMatrixf(mvm)
-
-    newmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    print "new mvm is: ", newmvm
-    '''
 def mouseMotionCB(x, y):
-    mvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    print "mvm is: ", mvm
-    glMatrixMode(GL_MODELVIEW)
-    glLoadIdentity()
-
-    print "the mouseMiddleDown is: ", mouseMiddleDown
-
     if(mouseLeftDown):
-        #cameraAngleY += (x - mouseX)
-        #cameraAngleX += (y - mouseY)
+        cameraAngleY += (x - mouseX)
+        cameraAngleX += (y - mouseY)
         mouseX = x
         mouseY = y
     if(mouseRightDown):
-        #cameraDistance -= (y - mouseY) * 0.2
+        cameraDistance -= (y - mouseY) * 0.2
         mouseY = y
-    if (mouseMiddleDown):
-        print "middle middle middle activated!"
-        mouseX = x
-        mouseY = y
-
-        print "the xRes is: ", xRes
-        print "the yRes is: ", yRes
-        print "the x-coord is: ", mouseX
-        print "the y-coord is: ", mouseY
-
-        global lastX
-        dx = mouseX - lastX
-        dy = mouseY - lastY
-        lastX = mouseX
-        global lastY
-        lastY = mouseY
-
-        glTranslatef(dx/float(100), dy/float(100), 0)
-        glRotatef(0, 0, 0, 0)
-        glScalef(1.0, 1.0, 1.0)
-        cameraX = mouseX
-        cameraY = mouseY
-        #glRotatef(rotateAngle*180.0/pi, rotateX, rotateY, rotateZ)
-        #glScalef(scaleX, scaleY, scaleZ)
-
-        intermedmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-        print "intermediate mvm is: ", intermedmvm
-
-    glMultMatrixf(mvm)
-
-    newmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    #print "new mvm is: ", newmvm
-    
-    # tell GLUT to call the redrawing function, in this case redraw()
-    glutPostRedisplay()
 
 #def redraw(worldArray):  
 
 def draw1():
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    #oldMatrix = (GLfloat * 16)()
+    #mvm = glGetDouble(GL_MODELVIEW_MATRIX)
+    #glLoadIdentity()
+    
+    #glMultMatrixf(oldMatrix)
+    #glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     #glPushMatrix()
 
     print len(verticesAccum)
 
-    #print "the scale factor list is: ", scalefAccum
+    print "the scale factor list is: ", scalefAccum
 
     for i in range(len(translateAccum)):
         glPushMatrix()
@@ -171,13 +107,12 @@ def draw1():
             # also for transformed normal matrix
 
             print "the translation is: ", translX, ", ", translY, ", ", translZ
-            #print "the rotation is: ", rotateX, ", ", rotateY, ", ", rotateZ, ", ", rotateAngle
-            #print "the scale factor is: ", scaleX, scaleY, scaleZ
+            print "the rotation is: ", rotateX, ", ", rotateY, ", ", rotateZ, ", ", rotateAngle
+            print "the scale factor is: ", scaleX, scaleY, scaleZ
 
             glTranslatef(translX, translY, translZ)
             glRotatef(rotateAngle*180.0/pi, rotateX, rotateY, rotateZ)
             glScalef(scaleX, scaleY, scaleZ)
-
 
         ambien = ambientAccum[i]
         diffus = diffuseAccum[i]
@@ -187,14 +122,14 @@ def draw1():
         emissi = [0.0, 0.0, 0.0, 1.0]
 
         glMaterialfv(GL_FRONT, GL_AMBIENT, ambien)
-        #print "the ambient2 is: ", ambien
+        print "the ambient2 is: ", ambien
         glMaterialfv(GL_FRONT, GL_DIFFUSE, diffus)
-        #print "the diffuse2 is: ", diffus
+        print "the diffuse2 is: ", diffus
         glMaterialfv(GL_FRONT, GL_SPECULAR, specul)
-        #print "the specular2 is: ", specul
-        #print "the emission2 is: ", emissi
+        print "the specular2 is: ", specul
+        print "the emission2 is: ", emissi
         glMaterialfv(GL_FRONT, GL_EMISSION, emissi)
-        #print "the shiny2 is: ", shinin
+        print "the shiny2 is: ", shinin
         glMaterialfv(GL_FRONT, GL_SHININESS, shinin)
 
         IPT = verticesAccum[i]
@@ -236,25 +171,7 @@ def draw1():
 
 # run the script
 if __name__ == "__main__":
-    # initializing the mouse presses to no presses
-    #global mouseLeftDown 
-    #mouseLeftDown = False
-    #global mouseRightDown 
-    #mouseRightDown = False
-    #global mouseMiddleDown 
-    #mouseMiddleDown = False
-
-    #global mouseX 
-    #mouseX = 0
-    #global mouseY 
-    #mouseY = 0
-
-    cameraX = 0
-    cameraY = 0
-    cameraZ = 0
-
     glutInit(sys.argv)
-
     # whether to pick flat, gourad, or phong shading
     # 0 is wireframe, 1 is flat, 2 is gouraud
     shade = int(sys.argv[1])
@@ -316,6 +233,10 @@ if __name__ == "__main__":
 
     lights = np.zeros([1, 3])
 
+    cameraX = 0
+    cameraY = 0
+    cameraZ = 0
+
     # these are the numbers for translation, rotation, and scale factor for all
     # transform blocks in all separators. Each separator will have one list
     # containing all the transform blocks. To determine which part in the list is
@@ -337,11 +258,6 @@ if __name__ == "__main__":
     verticesAccum = []
     normsAccum = []
 
-    global lastX
-    lastX = 0
-    global lastY
-    lastY = 0
-
     # as long as we don't reach the end of the file
     while (first != ''):
         firstparse = parameter.parseString(first)
@@ -354,11 +270,8 @@ if __name__ == "__main__":
                 firstparse = parameter.parseString(first)
                 # position parameter
                 if (firstparse[0] == 'position'):
-                    #global cameraX
                     cameraX = firstparse[1]
-                    #global cameraY
                     cameraY = firstparse[2]
-                    #global cameraZ
                     cameraZ = firstparse[3]
                     campos = np.array([cameraX, cameraY, cameraZ])
 
@@ -1036,15 +949,20 @@ if __name__ == "__main__":
             print "the verticesAccum is: ", verticesAccum
             print "the normsAccum is: ", normsAccum
     fo.close()
+    # initializing the mouse presses to no presses
+    mouseLeftDown = False
+    mouseRightDown = False
+    mouseMiddleDown = False
 
     glutDisplayFunc(draw1)
 
     glutReshapeFunc(resize)
 
     glutKeyboardFunc(keyfunc)
-    glutMouseFunc(mouseCB)
-    glutMotionFunc(mouseMotionCB)
-    #mvm = (GLfloat * 16)()
-
+    #glutMouseFunc(mouseCB)
+    #glutMotionFunc(mouseMotionCB)
+    
+    # tell GLUT to call the redrawing function, in this case redraw()
+    #glutPostRedisplay()
     glutMainLoop()
     glPopMatrix()

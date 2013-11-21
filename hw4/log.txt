@@ -4,3 +4,8 @@ problem is with first element is not properly declared when -1 and first element
 
 aggregating the vertices and normals for multi-separator blocks will not work. this is because we can't save the
 glRotate, glTranslate and what not due to the glPopMatrix
+
+plan:
+
+do the new matrix stuff before mainloop
+
