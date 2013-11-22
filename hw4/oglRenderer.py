@@ -9,6 +9,15 @@ import os
 import numpy as np
 from math import*
 
+def get_arcball_vector(x, y):
+    p = np.array([x, y, 0.0])
+    OP_squared = x * float(x) + float(y) * y
+    if (OP_squared <= 1.0*1.0):
+        p[2] = 1.0*sqrt(1.0*1.0 - OP_squared)  # Pythagore
+    else:
+        p = p/np.linalg.norm(p) # nearest point
+    return p
+
 # GLUT calls this function when the windows is resized.
 # All we do here is change the OpenGL viewport so it will always draw in the
 # largest square that can fit the window
@@ -50,22 +59,30 @@ def mouseCB(button, state, x, y):
 
     if(button == GLUT_LEFT_BUTTON):
         if(state == GLUT_DOWN):
+            print "the x-coordinate pixel is: ", x
+            print "the y-coordinate pixel is: ", y
             mouseLeftDown = True
+            global lastRotX
+            lastRotX = (x/float(xRes) - 0.5)*2.0
+
+            global lastRotY
+            lastRotY = (1.0 - y/float(yRes) - 0.5)*2.0
+
+            #global currRotX
+            #currRotX = (x/float(xRes) - 0.5)*2.0
+
+            #global currRotY
+            #currRotY = (1.0 - y/float(yRes) - 0.5)*2.0
+
         elif(state == GLUT_UP):
             mouseLeftDown = False
 
-    elif(button == GLUT_MIDDLE_BUTTON):
-        if(state == GLUT_DOWN):
-            mouseRightDown = True
-        elif(state == GLUT_UP):
-            mouseRightDown = False
-
     elif(button == GLUT_RIGHT_BUTTON):
         if(state == GLUT_DOWN):
-            mouseMiddleDown = True
+            mouseRightDown = True
             print "mouse Middle is down!"
         elif(state == GLUT_UP):
-            mouseMiddleDown = False
+            mouseRightDown = False
             print "wut, this should not be happening"
     print "the state of mouseMiddleDown is: ", mouseMiddleDown
     '''
@@ -97,29 +114,23 @@ def mouseCB(button, state, x, y):
 
 def mouseMotionCB(x, y):
     mvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    print "mvm is: ", mvm
+    #print "mvm is: ", mvm
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
-    print "the mouseMiddleDown is: ", mouseMiddleDown
+    #print "the mouseMiddleDown is: ", mouseMiddleDown
 
-    if(mouseLeftDown):
-        #cameraAngleY += (x - mouseX)
-        #cameraAngleX += (y - mouseY)
-        mouseX = x
-        mouseY = y
-    if(mouseRightDown):
-        #cameraDistance -= (y - mouseY) * 0.2
-        mouseY = y
-    if (mouseMiddleDown and shiftPressed == False):
-        print "middle middle middle activated!"
+    # if only the right mouse button is down, then the 
+    # translation feature is enabled
+    if (mouseRightDown and shiftPressed == False):
+        #print "right right right activated!"
         mouseX = x
         mouseY = y
 
-        print "the xRes is: ", xRes
-        print "the yRes is: ", yRes
-        print "the x-coord is: ", mouseX
-        print "the y-coord is: ", mouseY
+        #print "the xRes is: ", xRes
+        #print "the yRes is: ", yRes
+        #print "the x-coord is: ", mouseX
+        #print "the y-coord is: ", mouseY
 
         global lastX
         dx = mouseX - lastX
@@ -135,25 +146,92 @@ def mouseMotionCB(x, y):
         #glScalef(scaleX, scaleY, scaleZ)
 
         intermedmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-        print "intermediate mvm is: ", intermedmvm
+        #print "intermediate mvm is: ", intermedmvm
+
+    # If the right button on the mouse is down while 'shift' is pressed simultaneously
+    # then the zooming feature is enabled.
+    if (mouseRightDown and shiftPressed):
+        mouseX = x
+        mouseY = y
+        global lastZoom
+        dy = mouseY - lastZoom
+        lastZoom = mouseY
+        glTranslatef(0, 0, -1*dy/float(100))
+        glRotatef(0, 0, 0, 0)
+        glScalef(1.0, 1.0, 1.0)
 
     glMultMatrixf(mvm)
 
     newmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
     #print "new mvm is: ", newmvm
-
-    if (mouseMiddleDown and shiftPressed):
-        mouseX = x
-        mouseY = y
-        global lastY
-        dy = mouseY - lastY
-        lastY = mouseY
-        glTranslatef(0, 0, -1*dy/float(100))
-        glRotatef(0, 0, 0, 0)
-        glScalef(1.0, 1.0, 1.0)
     
     # tell GLUT to call the redrawing function, in this case redraw()
     glutPostRedisplay()
+
+    if(mouseLeftDown):
+        global currRotX
+        global currRotY
+        global lastRotX
+        global lastRotY
+
+        #print "the currRotX is: ", currRotX
+        #print "the lastRotX is: ", lastRotX
+
+        #cameraAngleY += (x - mouseX)
+        #cameraAngleX += (y - mouseY)
+        #print "the x-coordinate pixel2 is: ", x
+        #print "the y-coordinate pixel2 is: ", y
+        mouseX = (x/float(xRes) - 0.5)*2.0
+        mouseY = (1.0 - y/float(yRes) - 0.5)*2.0
+
+        currRotX = mouseX
+        currRotY = mouseY
+
+        va = get_arcball_vector(lastRotX, lastRotY)
+        vb = get_arcball_vector(currRotX, currRotY)
+
+        #print "the va matrix is: ", va
+        #print "the vb matrix is: ", vb
+
+        if (va[0] != vb[0] or va[1] != vb[1]):
+
+            angle = acos(min(1.0, np.inner(va, vb)))
+
+            #angle = ((va[0] - vb[0])**2 + (va[1] - vb[1])**2)*0.2
+
+            #print "the angle is: ", angle
+
+            axis_normalized = np.cross(va, vb)
+
+            #print "the first point is: (", va[0], ", ", va[1], ")"
+            #print "the first point is: (", vb[0], ", ", vb[1], ")"
+
+            #axis_in_camera_coord = np.array([vb[1] - va[1], vb[0] - va[0], 0])
+
+            #print "the normal is at: (", vb[1] - va[1], ", " , va[0] - vb[0], ")"
+
+            #axis_normalized = axis_in_camera_coord/np.linalg.norm(axis_in_camera_coord)
+
+            #print "the axis_in_camera_coord matrix is: ", axis_in_camera_coord
+
+            #newInter = np.dot(np.array(projMat), np.array(cameraMat)) 
+
+            #newMat = np.dot(newInter, np.array([axis_in_camera_coord[0],
+             #                                   axis_in_camera_coord[1],
+              #                                  axis_in_camera_coord[2],
+               #                                 0.0]))
+
+            #glTranslatef(0, 0, 0)
+            glRotatef(angle*180.0/pi,
+                      axis_normalized[0], # * sin(0.5*angle),
+                      axis_normalized[1], # * sin(0.5*angle),
+                      axis_normalized[2]) # * sin(0.5 * angle),
+            #glScalef(1.0, 1.0, 1.0)
+
+            #print "the camera matrix is: ", cameraMat
+
+            lastRotX = currRotX
+            lastRotY = currRotY
 
 #def redraw(worldArray):  
 
@@ -187,7 +265,7 @@ def draw1():
             # it is for Object Space to World Space
             # also for transformed normal matrix
 
-            print "the translation is: ", translX, ", ", translY, ", ", translZ
+            #print "the translation is: ", translX, ", ", translY, ", ", translZ
             #print "the rotation is: ", rotateX, ", ", rotateY, ", ", rotateZ, ", ", rotateAngle
             #print "the scale factor is: ", scaleX, scaleY, scaleZ
 
@@ -243,7 +321,7 @@ def draw1():
         glDrawArrays(GL_TRIANGLES, 0, len(IPT))
 
         glPopMatrix()
-        print "pop successful"
+        #print "pop successful"
         glutSwapBuffers() 
 
         # deactivate vertex arrays after drawing
@@ -296,7 +374,15 @@ if __name__ == "__main__":
     glutCreateWindow("CS171 HW4")
 
     # Tell openGL to use Gouraud shading:
-    glShadeModel(GL_SMOOTH)
+    if (shade == 2):
+        glShadeModel(GL_SMOOTH)
+
+    if (shade == 1):
+        glShadeModel(GL_FLAT)
+
+    # Tell opennGL to use WireFrame
+    if (shade == 0):
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
     
     # Enable back-face culling:
     glEnable(GL_CULL_FACE)
@@ -353,6 +439,15 @@ if __name__ == "__main__":
     # these are vertices and norms accumulated for all separators.
     verticesAccum = []
     normsAccum = []
+    
+    global lastRotX
+    lastRotX = 0
+    global lastRotY
+    lastRotY = 0
+    global currRotX
+    currRotX = 0
+    global currRotY
+    currRotY = 0
 
     # as long as we don't reach the end of the file
     while (first != ''):
@@ -372,6 +467,12 @@ if __name__ == "__main__":
                     cameraY = firstparse[2]
                     #global cameraZ
                     cameraZ = firstparse[3]
+
+                    global lastZoom
+                    lastZoom = cameraZ
+
+
+
                     campos = np.array([cameraX, cameraY, cameraZ])
 
                     print "the position of the camera is: ", campos
@@ -419,10 +520,13 @@ if __name__ == "__main__":
             print "the angle is: ", -1*angle*180.0/pi
 
             # multiply with inverse translation matrix
-            glTranslatef(-1*cameraX, -1*cameraY, -1*cameraZ)
+            glTranslatef(-1.0*cameraX, -1.0*cameraY, -1.0*cameraZ)
 
             # save the inverse camera matrix
             glPushMatrix()
+
+            global cameraMat
+            cameraMat = glGetFloatv(GL_MODELVIEW_MATRIX)
 
             # calculate the camera matrix
             # World space to camera space
@@ -434,78 +538,81 @@ if __name__ == "__main__":
             glFrustum(l, r, b, t, n, f)
             # Save the perspective projection matrix
             #glPushMatrix()
+            global projMat
+            projMat = glGetFloatv(GL_PROJECTION_MATRIX)
 
         glMatrixMode(GL_MODELVIEW)
 
         # if we reach PointLight parameter
         while (len(firstparse) != 0 and (firstparse[0] == 'PointLight')):
-            first = fo.readline()
-            lightidx += 1
-            amb = [0.0]*4
-            lightpos = [0.0]*4
-            diff = [0.0]*4
-            spec = [0.0]*4
-            # default position and color
-            lightpos[0] = 0.0
-            lightpos[1] = 0.0
-            lightpos[2] = 1.0
-            lightpos[3] = 1.0
-            amb[0] = 0.0
-            amb[1] = 0.0
-            amb[2] = 0.0
-            amb[3] = 1.0
-            diff[0] = 1.0
-            diff[1] = 1.0
-            diff[2] = 1.0
-            diff[3] = 1.0
-            spec[0] = 1.0
-            spec[1] = 1.0
-            spec[2] = 1.0
-            spec[3] = 1.0
-            # if there is a blank line, read another main parameter
-            while (first.strip() != ''):
-                firstparse = parameter.parseString(first)
-                # location parameter
-                if (firstparse[0] == 'location'):
-                    lightpos[0] = firstparse[1]
-                    lightpos[1] = firstparse[2]
-                    lightpos[2] = firstparse[3]
-                # color parameter
-                elif (firstparse[0] == 'color'):
-                    diff[0] = firstparse[1]
-                    diff[1] = firstparse[2]
-                    diff[2] = firstparse[3]
-
-                    spec[0] = firstparse[1]
-                    spec[1] = firstparse[2]
-                    spec[2] = firstparse[3]
-                    #totalred += red
-                    #totalgreen += green
-                    #totalblue += blue
-                
+            if (shade == 1 or shade == 2):
                 first = fo.readline()
-            print "light position"
-            print lightpos
-            print "diffusion"
-            print diff
-            print "specular"
-            print spec
-            print "ambient"
-            print amb
+                lightidx += 1
+                amb = [0.0]*4
+                lightpos = [0.0]*4
+                diff = [0.0]*4
+                spec = [0.0]*4
+                # default position and color
+                lightpos[0] = 0.0
+                lightpos[1] = 0.0
+                lightpos[2] = 1.0
+                lightpos[3] = 1.0
+                amb[0] = 0.0
+                amb[1] = 0.0
+                amb[2] = 0.0
+                amb[3] = 1.0
+                diff[0] = 1.0
+                diff[1] = 1.0
+                diff[2] = 1.0
+                diff[3] = 1.0
+                spec[0] = 1.0
+                spec[1] = 1.0
+                spec[2] = 1.0
+                spec[3] = 1.0
+                # if there is a blank line, read another main parameter
+                while (first.strip() != ''):
+                    firstparse = parameter.parseString(first)
+                    # location parameter
+                    if (firstparse[0] == 'location'):
+                        lightpos[0] = firstparse[1]
+                        lightpos[1] = firstparse[2]
+                        lightpos[2] = firstparse[3]
+                    # color parameter
+                    elif (firstparse[0] == 'color'):
+                        diff[0] = firstparse[1]
+                        diff[1] = firstparse[2]
+                        diff[2] = firstparse[3]
 
-            glEnable(GL_LIGHTING)
-            glLightModelfv(GL_LIGHT_MODEL_AMBIENT, amb)
-            glLightfv(GL_LIGHTC[lightidx], GL_AMBIENT, amb)
-            #print "the light ambient is: ", amb
-            glLightfv(GL_LIGHTC[lightidx], GL_DIFFUSE, diff)
-            #print "the light diffuse is: ", diff
-            glLightfv(GL_LIGHTC[lightidx], GL_SPECULAR, spec)
-            #print "the light specular is: ", spec
-            glLightfv(GL_LIGHTC[lightidx], GL_POSITION, lightpos)
-            #print "the light position is: ", lightpos
-            glEnable(GL_LIGHTC[lightidx])
+                        spec[0] = firstparse[1]
+                        spec[1] = firstparse[2]
+                        spec[2] = firstparse[3]
+                        #totalred += red
+                        #totalgreen += green
+                        #totalblue += blue
+                    
+                    first = fo.readline()
+                print "light position"
+                print lightpos
+                print "diffusion"
+                print diff
+                print "specular"
+                print spec
+                print "ambient"
+                print amb
 
-            #glPushMatrix()
+                glEnable(GL_LIGHTING)
+                glLightModelfv(GL_LIGHT_MODEL_AMBIENT, amb)
+                glLightfv(GL_LIGHTC[lightidx], GL_AMBIENT, amb)
+                #print "the light ambient is: ", amb
+                glLightfv(GL_LIGHTC[lightidx], GL_DIFFUSE, diff)
+                #print "the light diffuse is: ", diff
+                glLightfv(GL_LIGHTC[lightidx], GL_SPECULAR, spec)
+                #print "the light specular is: ", spec
+                glLightfv(GL_LIGHTC[lightidx], GL_POSITION, lightpos)
+                #print "the light position is: ", lightpos
+                glEnable(GL_LIGHTC[lightidx])
+
+                #glPushMatrix()
 
             first = fo.readline()
             firstparse = parameter.parseString(first)
@@ -562,10 +669,12 @@ if __name__ == "__main__":
                         tY = firstparse[2]
                         tZ = firstparse[3]
 
+                        # converting to pixel coordinates
+                        # keep in mind that the top left corner is (0, 0)
                         global lastX
-                        lastX = (tX + 1)*500.0/2
+                        lastX = (tX + 1.0)*xRes/2
                         global lastY
-                        lastY = (tY + 1)*500.0/2
+                        lastY = yRes - (tY + 1.0)*yRes/2
                     # rotation
                     elif (firstparse[0] == 'rotation'):
                         rotate = firstparse[0]
