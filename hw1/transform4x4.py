@@ -15,7 +15,7 @@ fo = open(fileParse, "r")
 
 # define grammar
 # number is real
-number = pp.Regex(r"-?\d+(\.\d*)?([Ee][+-]?\d+)?")
+number = pp.Regex(r"[-+]?([0-9]*\.[0-9]*|[0-9]+)([Ee][+-]?[0-9]+)?")
 number.setParseAction(lambda toks:float(toks[0]))
 
 # Optional added for the additional number for rotation

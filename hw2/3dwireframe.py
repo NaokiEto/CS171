@@ -285,7 +285,7 @@ while (first != ''):
                     xArr = float(firstparse[f])
                     yArr = float(firstparse[f+1])
                     zArr = float(firstparse[f+2])
-
+                    # multiply the transformation matrix by 4x1 matrix (the coordinates with 1.0 as w-coordinate)
                     newmat = np.dot(transformMat, np.array( [[xArr], 
                                                              [yArr], 
                                                              [zArr], 

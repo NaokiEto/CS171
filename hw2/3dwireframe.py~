@@ -99,7 +99,7 @@ yRes = int(sys.argv[2])
 
 # define grammar
 # number is float form
-number = pp.Regex(r"[-+]?([0-9]*\.[0-9]*|[0-9]+)")
+number = pp.Regex(r"[-+]?([0-9]*\.[0-9]*|[0-9]+)([Ee][+-]?[0-9]+)?")
 number.setParseAction(lambda toks:float(toks[0]))
 
 leftBrace = pp.Literal("{")
@@ -285,7 +285,7 @@ while (first != ''):
                     xArr = float(firstparse[f])
                     yArr = float(firstparse[f+1])
                     zArr = float(firstparse[f+2])
-
+                    # multiply the transformation matrix by 4x1 matrix (the coordinates with 1.0 as w-coordinate)
                     newmat = np.dot(transformMat, np.array( [[xArr], 
                                                              [yArr], 
                                                              [zArr], 
@@ -304,6 +304,8 @@ while (first != ''):
         while (first.strip() == ''):
             first = fo.readline()
             firstparse = parameter.parseString(first)
+
+	print coordsList
 
         # end of Coordinates block parameter
         if (len(firstparse) != 0 and (firstparse[0] == '}')):

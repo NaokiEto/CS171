@@ -7,6 +7,7 @@ import numpy as np
 from math import*
 import getopt
 
+# eyelight parameter that adds a dim light
 opts,operands = getopt.getopt(sys.argv[4:], "e", ["eyelight"])
 
 dimlight = 0
@@ -120,10 +121,6 @@ xRes = int(sys.argv[2])
 
 # y dimension size
 yRes = int(sys.argv[3])
-
-#if (len(sys.argv) == 5):
-# eyelight parameter that adds a dim light
-    
 
 # define grammar
 # number is float form
@@ -272,11 +269,16 @@ def raster(verts, shadingType, material, lights, campos, matrix):
 # split the text between file name and file extension
 fileName, fileExtension = os.path.splitext(os.readlink('/proc/self/fd/0'))
 
+# write to stdout
+saveout = sys.stdout 
+
 # create the ppm file
 ppm = open(fileName + ".ppm", "w")
-ppm.write("P3 \n")
-ppm.write(str(xRes) + " " + str(yRes) + "\n")
-ppm.write(str(255) + "\n")
+sys.stdout = ppm
+# print to stdout
+print "P3"
+print str(xRes) + " " + str(yRes)
+print str(255)
 
 first = fo.readline()
 
@@ -559,6 +561,7 @@ while (first != ''):
                     yArr = float(firstparse[f+1])
                     zArr = float(firstparse[f+2])
 
+                    # NDC
                     newmat = np.dot(transformMat, np.array( [[xArr], 
                                                              [yArr], 
                                                              [zArr], 
@@ -573,6 +576,7 @@ while (first != ''):
                     worldY = newworld[1,0]/newworld[3,0]
                     worldZ = newworld[2,0]/newworld[3,0]
 
+                    # NDC
                     coordsList.append(newX)
                     coordsList.append(newY)
                     coordsList.append(newZ)
@@ -672,7 +676,7 @@ while (first != ''):
                     worldPoints.append(k)
                     index += 1
                         
-                    # if k does not equal to 1, append the coordinates
+                    # if k does not equal to -1, append the coordinates
                     if (k != -1):
                         x1 = coordsList[int(3*k)]
                         y1 = coordsList[int(3*k) + 1]
@@ -885,11 +889,12 @@ while (first != ''):
         first = fo.readline()
     first = fo.readline()
 
+# Write to the stdout
 for l in range(xRes*yRes):
     onepixel = pixel[l]
     if (onepixel != 0):
-        ppm.write(str(int(onepixel[0] * 255)) + " " + str(int(onepixel[1] * 255)) + " " + str(int(onepixel[2] * 255)) + "\n")
+        print str(int(onepixel[0] * 255)) + " " + str(int(onepixel[1] * 255)) + " " + str(int(onepixel[2] * 255))
     else:
-        ppm.write(str(0) + " " + str(0) + " " + str(0) + "\n")
-
+        print str(0) + " " + str(0) + " " + str(0)
+sys.stdout = saveout
 ppm.close()

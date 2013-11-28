@@ -60,7 +60,7 @@ def bresenhamNegG1(a1, b1, a2, b2, xlen, ylen):
     dxdy = a2 - a1 + b2 - b1
     F = a2 - a1 + b2 - b1
     for i in range(b2, b1 + 1):
-        pixel[(xlen/2 - i - 1)*xlen + ylen/2 - y] = 1
+        pixel[(xlen/2 - i - 1)*xlen + ylen/2 - y - 1] = 1
         if(F < 0):
             F += dy
         else:

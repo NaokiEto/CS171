@@ -80,9 +80,12 @@ if (line3[0] == "translation"):
     translateZ = line3[3]
 
 elif (line3[0] == "rotation"):
-    x = line3[1]
-    y = line3[2]
-    z = line3[3]
+    prelimX = line[1]
+    prelimY = line[2]
+    prelimZ = line[3]
+    x = prelimX/sqrt(prelimX**2 + prelimY**2 + prelimZ**2)
+    y = prelimY/sqrt(prelimX**2 + prelimY**2 + prelimZ**2)
+    z = prelimZ/sqrt(prelimX**2 + prelimY**2 + prelimZ**2)
     angle = line3[4]
 
 else:
