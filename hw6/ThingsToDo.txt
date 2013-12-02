@@ -1,0 +1,5 @@
+change the grammar to reflect the . in the .png file
+
+instead of the numpy array, try the values between 0 and 1 and maybe pass the itertools stuff (the pngdata)
+
+find all png files in the directory and count them. This will be the amount of textures to save space

@@ -1,0 +1,3 @@
+change the grammar to reflect the . in the .png file
+
+instead of the numpy array, try the values between 0 and 1 and maybe pass the itertools stuff (the pngdata)

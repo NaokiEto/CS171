@@ -669,12 +669,6 @@ if __name__ == "__main__":
                         tY = firstparse[2]
                         tZ = firstparse[3]
 
-                        # converting to pixel coordinates
-                        # keep in mind that the top left corner is (0, 0)
-                        global lastX
-                        lastX = (tX + 1.0)*xRes/2
-                        global lastY
-                        lastY = yRes - (tY + 1.0)*yRes/2
                     # rotation
                     elif (firstparse[0] == 'rotation'):
                         rotate = firstparse[0]
@@ -696,6 +690,13 @@ if __name__ == "__main__":
                         sfZ = firstparse[3]
                     first = fo.readline()
                     firstparse = parameter.parseString(first)
+
+                # converting to pixel coordinates
+                # keep in mind that the top left corner is (0, 0)
+                global lastX
+                lastX = (tX + 1.0)*xRes/2
+                global lastY
+                lastY = yRes - (tY + 1.0)*yRes/2
 
                 translateSep.append(tX)
                 translateSep.append(tY)

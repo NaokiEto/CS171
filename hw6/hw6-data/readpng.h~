@@ -1,0 +1,5 @@
+#ifndef __READPNG_H
+#define __READPNG_H
+#include <png.h>
+png_bytepp readpng(const char *filename, int* width, int* height);
+#endif
