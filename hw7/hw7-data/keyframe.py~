@@ -1,0 +1,41 @@
+#!/usr/bin/python
+
+from OpenGL.GL import *
+from OpenGL.GL.shaders import *
+from OpenGL.GLUT import *
+from OpenGL.GLU import *
+import sys
+
+def display():
+
+    glClearColor(1.0f, 0.0f, 0.0f, 1.0f) # Clear the background of our window to red  
+    glClear(GL_COLOR_BUFFER_BIT) # Clear the colour buffer (more buffers later on)  
+    glLoadIdentity()  # Load the Identity Matrix to reset our drawing locations  
+  
+    glFlush() # Flush the OpenGL buffers to the window  
+      
+
+if __name__ == "__main__":
+
+    glutInit(sys.argv)
+
+    # x dimension size
+    #xRes = int(sys.argv[1])
+
+    # y dimension size
+    #yRes = int(sys.argv[2])
+
+    # iv file name to input
+    #ivFile = sys.argv[3]
+
+    glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE | GLUT_DEPTH)
+
+    glutInitWindowSize(100, 100)
+    glutInitWindowPosition(300, 100)
+
+    glutCreateWindow("CS171 HW6")
+
+    glutDisplayFunc(display) 
+
+    glutMainLoop()
+    return 0

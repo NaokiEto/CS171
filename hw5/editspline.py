@@ -45,7 +45,7 @@ def mouseCB(button, state, x, y):
                 print "it should go here ", i
                 # approximate the x and y because we cannot get exactly the x and y
                 if (abs(mouseCBx - pointscurve[i][0]) < 0.01 and abs(mouseCBy - pointscurve[i][1]) < 0.01):
-                    newknot = 1.0 - float(i)/len(pointscurve)
+                    newknot = float(i)/len(pointscurve)
                     print "the new knot is: ", newknot
                     # find where to insert the knot into the knot vector
                     correctidx = 2*len(knotvector)

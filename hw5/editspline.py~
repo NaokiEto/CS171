@@ -80,7 +80,7 @@ def mouseCB(button, state, x, y):
                     a = [0]*(oldlen)
                     for b in range(1, j - 4 + 1):
                         a[b] = 1.0
-                    for c in range(j - 4 + 2, j + 1):
+                    for c in range(j - 4 + 1, j + 1):
                         a[c] = (newknot - knotvector[c])/(knotvector[c + 4] - knotvector[c])
                     
                     # Calculate the new control points
