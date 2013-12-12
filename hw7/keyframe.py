@@ -44,6 +44,8 @@ def drawfunc():
     mvm = glGetFloatv(GL_MODELVIEW_MATRIX)
 
     global counterframe
+    global rotatecam
+    global zcoord
 
     print counterframe
 
@@ -214,9 +216,9 @@ def drawfunc():
     elif (frameURotate[3] > 1.0):
         rotateAngle = 2.0*0.0
 
-    print "the axes before dividing by sine are: ", frameURotate[0], ", ", frameURotate[1], ", ", frameURotate[2], ") with angle ", rotateAngle
+    #print "the axes before dividing by sine are: ", frameURotate[0], ", ", frameURotate[1], ", ", frameURotate[2], ") with angle ", rotateAngle
 
-    print "the difference is: ", sin(rotateAngle) - 0.001
+    #print "the difference is: ", sin(rotateAngle) - 0.001
 
     # to make sure the sine of the angle is greater than 0
     if (abs(sin(rotateAngle)) > 0.001):
@@ -235,6 +237,9 @@ def drawfunc():
     #print "the rotate angle is: ", rotateAngle
     #print "the rotate axis is: (", rotateX, ", ", rotateY, ", ", rotateZ, ")"
 
+    if (abs(rotateX) < 1e-10):
+        rotateX = 0.0
+
     print "the translate array is: ", frameUTranslate
     print "scale factor array is: ", frameUScale
     print "the rotate array is: ", rotateX, ", ", rotateY, ", ", rotateZ, ", ", rotateAngle
@@ -242,8 +247,10 @@ def drawfunc():
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
+    rotatecam = rotatecam * Zoom
+    zcoord = zcoord * Zoom
     # this is to help with the camera rotation around the origin
-    gluLookAt(0.0, 0.0, 60.0 + Zoom, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+    gluLookAt(rotatecam, 0.0, zcoord, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 
     glTranslatef(frameUTranslate[0], frameUTranslate[1], frameUTranslate[2])
     glRotatef(rotateAngle, rotateX, rotateY, rotateZ)
@@ -379,31 +386,55 @@ def processSpecialKeys(key, x, y):
     global Zoom
     global counterframe
     global rotatecam
+    global zcoord
 
     # zoom in
     if key == GLUT_KEY_UP:
-        print "the up key was pressed!"
-        Zoom -= 0.5
+        #print "the up key was pressed!"
+
+        Zoom = 0.9
         counterframe -= 1
-        print "the new zoom is: ", Zoom
+        #print "the new zoom is: ", Zoom
         drawfunc()
 
+        # reset Zoom
+        Zoom = 1.0
     # zoom out
     elif key == GLUT_KEY_DOWN:
-        print "the down key was pressed!"
-        Zoom += 0.5
+        #print "the down key was pressed!"
+        Zoom = 10.0/9.0
 
         counterframe -= 1
-        print "the new Zoom is: ", Zoom
+        #print "the new Zoom is: ", Zoom
         drawfunc()
+        # reset Zoom
+        Zoom = 1.0
     
     # rotate left around the origin (0, 0, 0)
     elif key == GLUT_KEY_LEFT:
-        rotatecam -= 0.5
+        # do pythagorean theorem/circle thingy
+        originalsum = rotatecam ** 2 + zcoord ** 2
+        if originalsum >= (rotatecam - 0.5)**2:
+            rotatecam -= 0.5
+        zcoord = sqrt(originalsum - rotatecam**2)
+        print "the x-coordinate is: ", rotatecam
+        print "the zcoord is: ", zcoord
+
+        counterframe -= 1
+        drawfunc()
 
     # rotate right around the origin (0, 0, 0)
     elif key == GLUT_KEY_RIGHT:
-        rotatecam -= 0.5
+        # do pythagorean theorem/circle thingy
+        originalsum = rotatecam ** 2 + zcoord ** 2
+        if originalsum >= (rotatecam + 0.5)**2:
+            rotatecam += 0.5
+        zcoord = sqrt(originalsum - rotatecam**2)
+        print "the x-coordinate is: ", rotatecam
+        print "the zcoord is: ", zcoord
+
+        counterframe -= 1
+        drawfunc()
 
 if __name__ == "__main__":
 
@@ -480,7 +511,11 @@ if __name__ == "__main__":
     # To zoom in (press the arrow up key to zoom in)
     # (press the arrow down key to zoom out)
     global Zoom
-    Zoom = 0
+    Zoom = 1.0
+
+    # How far away is the camera from the object
+    global zcoord
+    zcoord = 60.0
 
     # To rotate the camera around the origin
     # (press the arrow left key to rotate around left about origin)
@@ -557,7 +592,7 @@ if __name__ == "__main__":
     glLoadIdentity()
 
     # this is to help with the camera rotation around the origin
-    gluLookAt(0.0, 0.0, 60.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+    gluLookAt(0.0, 0.0, zcoord, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 
     glutDisplayFunc(idle) 
 
