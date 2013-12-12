@@ -8,17 +8,8 @@ import sys
 import pyparsing as pp
 from math import pi, sin, cos, acos, sqrt
 import numpy as np
-
+'''
 def idle():
-
-    global Initial
-    if (counterframe == -1 and Initial == 0):
-        glClearColor(0.0, 0.0, 0.0, 1.0)
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-        Initial = 1
-        drawfunc()
     
     # use catmull-rom
     # for some frame number, let's say frame 33, use frame 30, frame 45, frame 60 and frame 0
@@ -26,30 +17,17 @@ def idle():
     # the deltas will always be 15 since the difference between frames is 15
 
     # to pause or not to pause, that is the question (or key hehe lame alert)
-    if (pause == 0 and toggle == 0):
+    if (pause == 0):
         drawfunc()
-    if (pause == 0 and toggle == 1):
-        if (counterframe < 75):
-            drawfunc()
-        else:
-            exit(0)
     
 def drawfunc():
-
-    glClearColor(0.0, 0.0, 0.0, 1.0)
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     mvm = glGetFloatv(GL_MODELVIEW_MATRIX)
 
     global counterframe
 
-    print counterframe
-
     counterframe += 1
     frameIdx = counterframe % 75
-
-    print "TTTTTTTTTTTTTTTTTTTTTTTthe frame number is: ", frameIdx
 
     index = 0
     frameBlock = framenum[index]
@@ -213,12 +191,10 @@ def drawfunc():
     elif (frameURotate[3] > 1.0):
         rotateAngle = 2.0*0.0
 
-    print "the axes before dividing by sine are: ", frameURotate[0], ", ", frameURotate[1], ", ", frameURotate[2], ") with angle ", rotateAngle
-
-    print "the difference is: ", sin(rotateAngle) - 0.001
+    #print "the axes before dividing by sine are: ", frameURotate[0], ", ", frameURotate[1], ", ", frameURotate[2], ")"
 
     # to make sure the sine of the angle is greater than 0
-    if (abs(sin(rotateAngle)) > 0.001):
+    if (sin(rotateAngle) != 0):
         rotateX = frameURotate[0]/sin(rotateAngle)
         #print "the y-axis is: ", frameURotate[1]
         #print "the angle is: ", rotateAngle
@@ -247,73 +223,7 @@ def drawfunc():
 
     #glMultMatrixf(mvm)
 
-    # this is to help with the camera rotation around the origin
-    gluLookAt(0.0, 0.0, 80.0 + Zoom, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
-
-    glEnable (GL_POLYGON_SMOOTH)
-
-    #glLoadIdentity()    
-
-    glPushMatrix()
-    glColor3f(1.0, 1.0, 0.0)
-    yellowcylinder = gluNewQuadric()
-    gluQuadricDrawStyle(yellowcylinder, GLU_FILL)
-    # to make it far away
-    glTranslatef(-2.0, 0.0, -2.0)
-    glRotatef(90.0,0.0,1.0,0.0)
-
-    # gluQuadric object, base, top, height, slices, stacks
-    gluCylinder(yellowcylinder, 0.2, 0.2, 2.0, 2, 10)
-
-    
-    glTranslatef(0.0, 0.0, 2.0)
-    glColor3f(0.0, 1.0, 0.0)
-    glRotatef(0.0,0.0,1.0,0.0)
-    greencylinder = gluNewQuadric()
-
-    gluQuadricDrawStyle(greencylinder, GLU_FILL)
-    
-    gluCylinder(greencylinder, 0.2, 0.2, 2.0, 2, 10)
-
-    glTranslatef(0.1, 0.2, 0.0)
-    glColor3f(0.0, 0.0, 1.0)
-    glRotatef(-90.0,1.0,0.0,0.0)
-    bluecylinder = gluNewQuadric()
-
-    gluQuadricDrawStyle(bluecylinder, GLU_FILL)
-    
-    gluCylinder(bluecylinder, 0.2, 0.2, 4.0, 2, 10)
-    
-    glTranslatef(0.0, 2.0, 4.1)
-    glRotatef(90.0, 1.0, 0.0, 0.0)
-    glColor3f(1.0, 0.0, 1.0)
-
-    pinkcylinder = gluNewQuadric()
-
-    gluQuadricDrawStyle(pinkcylinder, GLU_FILL)
-
-    gluCylinder(pinkcylinder, 0.2, 0.2, 2.0, 2, 10)
-
-    
-    glTranslatef(0.0, 0.0, 2.0)
-    glColor3f(0.0, 1.0, 1.0)
-    cyancylinder = gluNewQuadric()
-    glRotatef(0.0, 1.0, 0.0, 0.0)
-
-    gluQuadricDrawStyle(cyancylinder, GLU_FILL)
-
-    gluCylinder(cyancylinder, 0.2, 0.2, 2.0, 2, 10)
-
-    glPopMatrix()
-
-    # delete the created objects
-    gluDeleteQuadric(yellowcylinder)
-    gluDeleteQuadric(greencylinder)
-    gluDeleteQuadric(bluecylinder)
-    gluDeleteQuadric(pinkcylinder)
-    gluDeleteQuadric(cyancylinder)
-
-    glutSwapBuffers()  
+    glutPostRedisplay()
 
 
 # GLUT calls this function when a key is pressed. Here we just quit when ESC or
@@ -321,8 +231,6 @@ def drawfunc():
 def keyfunc(key, x, y):
     global pause
     global counterframe
-    global toggle
-    mod = glutGetModifiers()
     # To exit the program
     if key == 27 or key == 'q' or key == 'Q':
         exit(0)
@@ -334,83 +242,102 @@ def keyfunc(key, x, y):
         pause = 0
     # To forward one frame
     if key == 'F' or key == 'f':
-        pause = 0
-        drawfunc()
         pause = 1
+        drawfunc()
     # suppose to decrement the time by 1
     if key == 'R' or key == 'r':
-        pause = 0
+        pause = 1
         counterframe -= 2
-        print "the counterframe is: ", counterframe
         drawfunc()
-        pause = 1
-    # Toggle Loop mode on/off.
-    # Loop mode means that the animation will restart at the
-    # beginning upon reaching the end
-    if key == 'T' or key == 't':
-        toggle = 1 - toggle
+'''
+def display():
 
-    # Jump to frame. After pressing this key, the program should
-    # ask the user to input the frame number to jump to.
-    if key == 'J' or key == 'j':
+    glClearColor(0.0, 0.0, 0.0, 1.0)
 
-        # take the user-input for the frame number
-        DesiredFrame = input("Please input the frame number you would like to see: ")
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        # convert the string input into integer
-        DesiredFrame = int(DesiredFrame)
+    glLoadIdentity()    
 
-        # pause the frame
-        pause = 1
-        # set the frame to the desired frame number
-        counterframe = DesiredFrame - 1
-        # draw
-        drawfunc()
+    glPushMatrix()
+    glColor3f(1.0, 1.0, 0.0)
+    yellowcylinder = gluNewQuadric()
+    glRotatef(90.0,0.0,1.0,0.0)
 
-    # Zero. Reset to the first frame.
-    if key == '0':
-        pause = 1
-        counterframe = -1
-        drawfunc()
+    # gluQuadric object, base, top, height, slices, stacks
+    gluCylinder(yellowcylinder, 0.01, 0.01, 0.1, 30, 50)
 
-def processSpecialKeys(key, x, y):
-    global Zoom
-    global counterframe
-
-    if key == GLUT_KEY_UP:
-        print "the up key was pressed!"
-        Zoom -= 0.5
-        counterframe -= 1
-        print "the new zoom is: ", Zoom
-        drawfunc()
-
-    elif key == GLUT_KEY_DOWN:
-        print "the down key was pressed!"
-        Zoom += 0.5
-
-        counterframe -= 1
-        print "the new Zoom is: ", Zoom
-        drawfunc()
     '''
-    elif key == GLUT_KEY_LEFT:
-    elif key == GLUT_KEY_RIGHT:
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    #glPushMatrix()
+    glTranslatef(-0.1,0.0,2.0)
+    glColor3f(1.0, 1.0, 0.0)
+    yellowcylinder = gluNewQuadric()
+    glRotatef(90.0,0.0,1.0,0.0)
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    # gluQuadric object, base, top, height, slices, stacks
+    gluCylinder(yellowcylinder, 0.01, 0.01, 0.1, 3, 5)
     '''
+    
+
+
+    glTranslatef(0.0, 0.0, 0.1)
+    glColor3f(0.0, 1.0, 0.0)
+    glRotatef(0.0,0.0,1.0,0.0)
+    greencylinder = gluNewQuadric()
+    
+    gluCylinder(greencylinder, 0.01, 0.01, 0.1, 3, 5)
+
+    glTranslatef(0.005, 0.01, 0.0)
+    glColor3f(0.0, 0.0, 1.0)
+    glRotatef(-90.0,1.0,0.0,0.0)
+    redcylinder = gluNewQuadric()
+    
+    gluCylinder(redcylinder, 0.01, 0.01, 0.2, 3, 5)
+    
+
+    glTranslatef(0.0, 0.1, 0.201)
+    glColor3f(1.0, 0.0, 1.0)
+    pinkcylinder = gluNewQuadric()
+    glRotatef(90.0, 1.0, 0.0, 0.0)
+
+    gluCylinder(pinkcylinder, 0.01, 0.01, 0.1, 3, 5)
+
+    glTranslatef(0.0, 0.0, 0.1)
+    glColor3f(0.0, 1.0, 1.0)
+    cyancylinder = gluNewQuadric()
+    glRotatef(0.0, 1.0, 0.0, 0.0)
+
+    gluCylinder(cyancylinder, 0.01, 0.01, 0.1, 3, 5)
+
+    
+
+    glPopMatrix()
+
+    glutSwapBuffers()  
+      
 
 if __name__ == "__main__":
 
     glutInit(sys.argv)
 
-    # .script file name to input
-    samplescript = sys.argv[1]
+    # x dimension size
+    xRes = int(sys.argv[1])
+
+    # y dimension size
+    yRes = int(sys.argv[2])
+
+    # iv file name to input
+    samplescript = sys.argv[3]
 
     glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE | GLUT_DEPTH)
 
-    glutInitWindowSize(500, 500)
+    glutInitWindowSize(xRes, yRes)
     glutInitWindowPosition(300, 100)
 
     glutCreateWindow("CS171 HW7")
 
-    
+    '''
     # define grammar
     # number is float form
     # does +/-, 0., .2, and exponentials
@@ -457,40 +384,17 @@ if __name__ == "__main__":
     rotationsFram = []
 
     # count the number of frame
-    global counterframe
-    counterframe = -1
+    #global counterframe
+    #counterframe = -1
 
     # Pause, set to no pause
-    global pause
-    pause = 1
+    #global pause
+    #pause = 0
 
-    # Toggle, set to only 1 run
-    global toggle
-    toggle = 1
+    #glMatrixMode(GL_PROJECTION)
+    #glLoadIdentity()
+    #glFrustum(-15.0, 15.0, -15.0, 15.0, 1.0, 30.0)
 
-    # To zoom in (press the arrow up key)
-    global Zoom
-    Zoom = 0
-
-    # To initialize the window at t = 0
-    global Initial
-    Initial = 0
-
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
-
-    #glOrtho(-15.0, 15.0, -15.0, 15.0, 1.0, 30.0)
-    #glFrustum(-15.0, 15.0, -20.0, 20.0, 0.5, 30.0)
-
-    #glFrustum(-.3, 0.3, -0.3, 0.3, 1.0, 30.0)
-
-    #gluLookAt(0.0, 0.0, -3.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
-
-    # viewing angle is 88 degrees, distance between viewer and nearest clipping plane is 0
-    # distance between viewer and furthest clipping plane is 10
-    gluPerspective(89.8, 1.0, 0.0, 30.0);
-
-    #glOrtho(0.0, 20.0, 0.0, 20.0, -20.0, 20.0)
 
     while (first != ''):
         firstparse = parameter.parseString(first)
@@ -533,18 +437,13 @@ if __name__ == "__main__":
 
     fo.close()
 
-    
-    glMatrixMode(GL_MODELVIEW)
-    glLoadIdentity()
+    '''
+    #glMatrixMode(GL_MODELVIEW)
+    #glLoadIdentity()
 
-    # this is to help with the camera rotation around the origin
-    gluLookAt(0.0, 0.0, 80.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+    glutDisplayFunc(display) 
 
-    glutDisplayFunc(idle) 
+    #glutIdleFunc(idle)
 
-    glutIdleFunc(idle)
-
-    glutKeyboardFunc(keyfunc)
-    glutSpecialFunc(processSpecialKeys)
-
+    #glutKeyboardFunc(keyfunc)
     glutMainLoop()

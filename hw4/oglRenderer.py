@@ -106,7 +106,7 @@ def mouseCB(button, state, x, y):
     newmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
     print "new mvm is: ", newmvm
     '''
-    mod = glutGetModifiers();
+    mod = glutGetModifiers()
     if (mod == GLUT_ACTIVE_SHIFT):
         print "shift is activated!"
         shiftPressed = True
