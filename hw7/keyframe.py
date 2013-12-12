@@ -32,6 +32,7 @@ def idle():
         if (counterframe < 75):
             drawfunc()
         else:
+            glutLeaveMainLoop()
             exit(0)
     
 def drawfunc():
@@ -241,14 +242,14 @@ def drawfunc():
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
+    # this is to help with the camera rotation around the origin
+    gluLookAt(0.0, 0.0, 60.0 + Zoom, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+
     glTranslatef(frameUTranslate[0], frameUTranslate[1], frameUTranslate[2])
     glRotatef(rotateAngle, rotateX, rotateY, rotateZ)
     glScalef(frameUScale[0], frameUScale[1], frameUScale[2])
 
     #glMultMatrixf(mvm)
-
-    # this is to help with the camera rotation around the origin
-    gluLookAt(0.0, 0.0, 80.0 + Zoom, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 
     glEnable (GL_POLYGON_SMOOTH)
 
@@ -263,7 +264,7 @@ def drawfunc():
     glRotatef(90.0,0.0,1.0,0.0)
 
     # gluQuadric object, base, top, height, slices, stacks
-    gluCylinder(yellowcylinder, 0.2, 0.2, 2.0, 2, 10)
+    gluCylinder(yellowcylinder, 0.2, 0.2, 2.0, 8, 10)
 
     
     glTranslatef(0.0, 0.0, 2.0)
@@ -273,7 +274,7 @@ def drawfunc():
 
     gluQuadricDrawStyle(greencylinder, GLU_FILL)
     
-    gluCylinder(greencylinder, 0.2, 0.2, 2.0, 2, 10)
+    gluCylinder(greencylinder, 0.2, 0.2, 2.0, 8, 10)
 
     glTranslatef(0.1, 0.2, 0.0)
     glColor3f(0.0, 0.0, 1.0)
@@ -282,7 +283,7 @@ def drawfunc():
 
     gluQuadricDrawStyle(bluecylinder, GLU_FILL)
     
-    gluCylinder(bluecylinder, 0.2, 0.2, 4.0, 2, 10)
+    gluCylinder(bluecylinder, 0.2, 0.2, 4.0, 8, 10)
     
     glTranslatef(0.0, 2.0, 4.1)
     glRotatef(90.0, 1.0, 0.0, 0.0)
@@ -292,7 +293,7 @@ def drawfunc():
 
     gluQuadricDrawStyle(pinkcylinder, GLU_FILL)
 
-    gluCylinder(pinkcylinder, 0.2, 0.2, 2.0, 2, 10)
+    gluCylinder(pinkcylinder, 0.2, 0.2, 2.0, 8, 10)
 
     
     glTranslatef(0.0, 0.0, 2.0)
@@ -302,7 +303,7 @@ def drawfunc():
 
     gluQuadricDrawStyle(cyancylinder, GLU_FILL)
 
-    gluCylinder(cyancylinder, 0.2, 0.2, 2.0, 2, 10)
+    gluCylinder(cyancylinder, 0.2, 0.2, 2.0, 8, 10)
 
     glPopMatrix()
 
@@ -325,6 +326,7 @@ def keyfunc(key, x, y):
     mod = glutGetModifiers()
     # To exit the program
     if key == 27 or key == 'q' or key == 'Q':
+        glutLeaveMainLoop()
         exit(0)
     # To stop (pause) the program
     if key == 'S' or key == 's':
@@ -376,7 +378,9 @@ def keyfunc(key, x, y):
 def processSpecialKeys(key, x, y):
     global Zoom
     global counterframe
+    global rotatecam
 
+    # zoom in
     if key == GLUT_KEY_UP:
         print "the up key was pressed!"
         Zoom -= 0.5
@@ -384,6 +388,7 @@ def processSpecialKeys(key, x, y):
         print "the new zoom is: ", Zoom
         drawfunc()
 
+    # zoom out
     elif key == GLUT_KEY_DOWN:
         print "the down key was pressed!"
         Zoom += 0.5
@@ -391,10 +396,14 @@ def processSpecialKeys(key, x, y):
         counterframe -= 1
         print "the new Zoom is: ", Zoom
         drawfunc()
-    '''
+    
+    # rotate left around the origin (0, 0, 0)
     elif key == GLUT_KEY_LEFT:
+        rotatecam -= 0.5
+
+    # rotate right around the origin (0, 0, 0)
     elif key == GLUT_KEY_RIGHT:
-    '''
+        rotatecam -= 0.5
 
 if __name__ == "__main__":
 
@@ -468,13 +477,23 @@ if __name__ == "__main__":
     global toggle
     toggle = 1
 
-    # To zoom in (press the arrow up key)
+    # To zoom in (press the arrow up key to zoom in)
+    # (press the arrow down key to zoom out)
     global Zoom
     Zoom = 0
+
+    # To rotate the camera around the origin
+    # (press the arrow left key to rotate around left about origin)
+    # (press the arrow right key to rotate around right about origin)
+    global rotatecam
+    rotatecam = 0
 
     # To initialize the window at t = 0
     global Initial
     Initial = 0
+
+    # Enable depth-buffer test.
+    #glEnable(GL_DEPTH_TEST)
 
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -488,7 +507,7 @@ if __name__ == "__main__":
 
     # viewing angle is 88 degrees, distance between viewer and nearest clipping plane is 0
     # distance between viewer and furthest clipping plane is 10
-    gluPerspective(89.8, 1.0, 0.0, 30.0);
+    gluPerspective(65.0, 2.0, 0.01, 500.0);
 
     #glOrtho(0.0, 20.0, 0.0, 20.0, -20.0, 20.0)
 
@@ -538,7 +557,7 @@ if __name__ == "__main__":
     glLoadIdentity()
 
     # this is to help with the camera rotation around the origin
-    gluLookAt(0.0, 0.0, 80.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+    gluLookAt(0.0, 0.0, 60.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 
     glutDisplayFunc(idle) 
 
