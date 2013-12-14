@@ -387,6 +387,8 @@ def processSpecialKeys(key, x, y):
     global counterframe
     global rotatecam
     global zcoord
+    global case1
+    global case2
 
     # zoom in
     if key == GLUT_KEY_UP:
@@ -414,8 +416,22 @@ def processSpecialKeys(key, x, y):
     elif key == GLUT_KEY_LEFT:
         # do pythagorean theorem/circle thingy
         originalsum = rotatecam ** 2 + zcoord ** 2
-        rotatecam -= 0.5
-        zcoord = sqrt(originalsum - rotatecam**2)
+        # if we subtracting 0.5 from the x-coordinate as we go to the left,
+        # and if the original sum is going to be less than the new x-coordinate
+        # squared, then we have to switch cases to adding 0.5
+        if (case1 == 1 and originalsum < (rotatecam - 0.5)**2):
+            case1 = 1 - case1
+            case2 = 1 - case2
+        elif (case2 == 1 and originalsum < (rotatecam + 0.5)**2):
+            case1 = 1 - case1
+            case2 = 1 - case2
+
+        if (case1 == 1):
+            rotatecam -= 0.5
+            zcoord = sqrt(originalsum - rotatecam**2)
+        elif (case2 == 1):
+            rotatecam += 0.5
+            zcoord = -1.0*sqrt(originalsum - rotatecam**2)
         print "the x-coordinate is: ", rotatecam
         print "the zcoord is: ", zcoord
 
@@ -426,9 +442,22 @@ def processSpecialKeys(key, x, y):
     elif key == GLUT_KEY_RIGHT:
         # do pythagorean theorem/circle thingy
         originalsum = rotatecam ** 2 + zcoord ** 2
-        if originalsum >= (rotatecam + 0.5)**2:
+        if (case1 == 1 and originalsum < (rotatecam + 0.5)**2):
+            print "cases switch!"
+            case1 = 1 - case1
+            case2 = 1 - case2
+        elif (case2 == 1 and originalsum < (rotatecam - 0.5)**2):
+            case1 = 1 - case1
+            case2 = 1 - case2
+
+        if (case1 == 1):
             rotatecam += 0.5
-        zcoord = sqrt(originalsum - rotatecam**2)
+            zcoord = sqrt(originalsum - rotatecam**2)
+        elif (case2 == 1):
+            print "we are now in case 2"
+            rotatecam -= 0.5
+            zcoord = -1.0*sqrt(originalsum - rotatecam**2)
+
         print "the x-coordinate is: ", rotatecam
         print "the zcoord is: ", zcoord
 
@@ -525,6 +554,12 @@ if __name__ == "__main__":
     # To initialize the window at t = 0
     global Initial
     Initial = 0
+
+    # This is for going left or right by more than 90 degrees
+    global case1
+    global case2
+    case1 = 1
+    case2 = 0
 
     # Enable depth-buffer test.
     #glEnable(GL_DEPTH_TEST)

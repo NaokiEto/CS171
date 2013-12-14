@@ -1,3 +1,5 @@
+This is for the Interpolating Keyframes Lab 
+
 ANIMATION CONTROLS
 To play the animation, press 'P' or 'p'
 To pause the animation, press 'S' or 's'
@@ -20,4 +22,7 @@ To run the program, just do python keyframe.py sample.script
 
 As usual, make sure that pyparsing and numpy are installed as discussed in previous READMEs
 
-
+************************************************************************************************
+If additional information is needed to help run the program, please email me at neto@caltech.edu,
+and I will gladly assist.
+************************************************************************************************

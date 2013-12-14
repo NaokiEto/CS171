@@ -41,18 +41,12 @@ def drawfunc():
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-    mvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-
     global counterframe
     global rotatecam
     global zcoord
 
-    print counterframe
-
     counterframe += 1
     frameIdx = counterframe % 75
-
-    print "TTTTTTTTTTTTTTTTTTTTTTTthe frame number is: ", frameIdx
 
     index = 0
     frameBlock = framenum[index]
@@ -76,8 +70,6 @@ def drawfunc():
     if (frameIdx % 15 > 0):
         index -= 1
 
-    print "the index of the frame ", frameIdx, "is in the the frameBlock ", framenum[index - 1]
-
     u = (frameIdx % 15)/15.0
 
     # This is for the translations, we use catmull-rom spline interpolation
@@ -86,11 +78,6 @@ def drawfunc():
     currTranslation = np.array(translationsFram[index % len(framenum)])
     nextTranslation = np.array(translationsFram[(index + 1) % len(framenum)])
     nextnextTranslation = np.array(translationsFram[(index + 2) % len(framenum)])
-
-    print "the prevTranslation is: ", prevTranslation
-    print "the currTranslation is: ", currTranslation
-    print "the nextTranslation is: ", nextTranslation
-    print "the nextnextTranslation is: ", nextnextTranslation
 
     kprime0Translate = 0.5*(currTranslation - prevTranslation)/15.0 + 0.5*(nextTranslation - currTranslation)/15.0
     kprime1Translate = 0.5*(nextTranslation - currTranslation)/15.0 + 0.5*(nextnextTranslation - nextTranslation)/15.0
@@ -124,9 +111,6 @@ def drawfunc():
     preprevZ = preprevRotate[2]/(sqrt(preprevRotate[0]**2 + preprevRotate[1]**2 + preprevRotate[2]**2))
     preprevAngle = preprevRotate[3] * pi/(2.0 * 180.0)
 
-    #print "the previous frame rotate axis is: ", preprevX, ", ", preprevY, ", ", preprevZ
-    #print "the previous angle is: ", preprevAngle
-
     prevqx = preprevX * sin(preprevAngle)
     prevqy = preprevY * sin(preprevAngle)
     prevqz = preprevZ * sin(preprevAngle)
@@ -144,9 +128,6 @@ def drawfunc():
     precurrZ = precurrRotate[2]/(sqrt(precurrRotate[0]**2 + precurrRotate[1]**2 + precurrRotate[2]**2))
     precurrAngle = precurrRotate[3] * pi/(2.0*180.0)
 
-    #print "the current frame rotate axis is: ", precurrX, ", ", precurrY, ", ", precurrZ
-    #print "the current angle is: ", precurrAngle
-
     currqx = precurrX * sin(precurrAngle)
     currqy = precurrY * sin(precurrAngle)
     currqz = precurrZ * sin(precurrAngle)
@@ -156,8 +137,6 @@ def drawfunc():
 
     currQuaternion = np.array([currqx/currnormalizing, currqy/currnormalizing, 
                                currqz/currnormalizing, currqw/currnormalizing])
-
-    #print "the current quaternion is: ", currQuaternion
 
     # next frame, rotation, convert to quaternion
     prenextRotate = rotationsFram[(index + 1) % len(framenum)]
@@ -199,14 +178,10 @@ def drawfunc():
     kprime0Rotate = 0.5*(currQuaternion - prevQuaternion)/15.0 + 0.5*(nextQuaternion - currQuaternion)/15.0
     kprime1Rotate = 0.5*(nextQuaternion - currQuaternion)/15.0 + 0.5*(nextnextQuaternion - nextQuaternion)/15.0
 
-    #print "the u-value is: ", u
-
     frameURotate = currQuaternion * (2 * u * u * u - 3 * u * u + 1) + \
                    nextQuaternion * (3 * u * u - 2 * u * u * u) + \
                    kprime0Rotate * (u * u * u - 2 * u * u + u) + \
                    kprime1Rotate * (u * u * u - u * u)
-
-    #print "the inverse cosine of: ", frameURotate[3]
 
     # to make sure that the ratio is less than or equal to 1, to be able to do inverse cosine
     if (frameURotate[3] <= 1.0 and frameURotate[3] >= -1.0):
@@ -216,15 +191,9 @@ def drawfunc():
     elif (frameURotate[3] > 1.0):
         rotateAngle = 2.0*0.0
 
-    #print "the axes before dividing by sine are: ", frameURotate[0], ", ", frameURotate[1], ", ", frameURotate[2], ") with angle ", rotateAngle
-
-    #print "the difference is: ", sin(rotateAngle) - 0.001
-
     # to make sure the sine of the angle is greater than 0
     if (abs(sin(rotateAngle)) > 0.001):
         rotateX = frameURotate[0]/sin(rotateAngle)
-        #print "the y-axis is: ", frameURotate[1]
-        #print "the angle is: ", rotateAngle
         rotateY = frameURotate[1]/sin(rotateAngle)
         rotateZ = frameURotate[2]/sin(rotateAngle)
     else:
@@ -234,15 +203,9 @@ def drawfunc():
 
     rotateAngle = rotateAngle * 180.0/pi
 
-    #print "the rotate angle is: ", rotateAngle
-    #print "the rotate axis is: (", rotateX, ", ", rotateY, ", ", rotateZ, ")"
-
+    # want to avoid that nasty floating point arithmetic
     if (abs(rotateX) < 1e-10):
         rotateX = 0.0
-
-    print "the translate array is: ", frameUTranslate
-    print "scale factor array is: ", frameUScale
-    print "the rotate array is: ", rotateX, ", ", rotateY, ", ", rotateZ, ", ", rotateAngle
 
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
@@ -256,17 +219,13 @@ def drawfunc():
     glRotatef(rotateAngle, rotateX, rotateY, rotateZ)
     glScalef(frameUScale[0], frameUScale[1], frameUScale[2])
 
-    #glMultMatrixf(mvm)
-
+    # These are for the 5 cylinders that follow
     glEnable (GL_POLYGON_SMOOTH)
-
-    #glLoadIdentity()    
 
     glPushMatrix()
     glColor3f(1.0, 1.0, 0.0)
     yellowcylinder = gluNewQuadric()
     gluQuadricDrawStyle(yellowcylinder, GLU_FILL)
-    # to make it far away
     glTranslatef(-2.0, 0.0, -2.0)
     glRotatef(90.0,0.0,1.0,0.0)
 
@@ -324,8 +283,7 @@ def drawfunc():
     glutSwapBuffers()  
 
 
-# GLUT calls this function when a key is pressed. Here we just quit when ESC or
-# 'q' is pressed.
+# This is for the keys to control the animation
 def keyfunc(key, x, y):
     global pause
     global counterframe
@@ -350,7 +308,6 @@ def keyfunc(key, x, y):
     if key == 'R' or key == 'r':
         pause = 0
         counterframe -= 2
-        print "the counterframe is: ", counterframe
         drawfunc()
         pause = 1
     # Toggle Loop mode on/off.
@@ -382,6 +339,7 @@ def keyfunc(key, x, y):
         counterframe = -1
         drawfunc()
 
+# This is for the keys to control the camera
 def processSpecialKeys(key, x, y):
     global Zoom
     global counterframe
@@ -392,22 +350,16 @@ def processSpecialKeys(key, x, y):
 
     # zoom in
     if key == GLUT_KEY_UP:
-        #print "the up key was pressed!"
-
         Zoom = 0.9
         counterframe -= 1
-        #print "the new zoom is: ", Zoom
         drawfunc()
-
         # reset Zoom
         Zoom = 1.0
+
     # zoom out
     elif key == GLUT_KEY_DOWN:
-        #print "the down key was pressed!"
         Zoom = 10.0/9.0
-
         counterframe -= 1
-        #print "the new Zoom is: ", Zoom
         drawfunc()
         # reset Zoom
         Zoom = 1.0
@@ -432,8 +384,6 @@ def processSpecialKeys(key, x, y):
         elif (case2 == 1):
             rotatecam += 0.5
             zcoord = -1.0*sqrt(originalsum - rotatecam**2)
-        print "the x-coordinate is: ", rotatecam
-        print "the zcoord is: ", zcoord
 
         counterframe -= 1
         drawfunc()
@@ -444,7 +394,6 @@ def processSpecialKeys(key, x, y):
         # do pythagorean theorem/circle thingy
         originalsum = rotatecam ** 2 + zcoord ** 2
         if (case1 == 1 and originalsum < (rotatecam + 0.5)**2):
-            print "cases switch!"
             case1 = 1 - case1
             case2 = 1 - case2
         elif (case2 == 1 and originalsum < (rotatecam - 0.5)**2):
@@ -455,12 +404,8 @@ def processSpecialKeys(key, x, y):
             rotatecam += 0.5
             zcoord = sqrt(originalsum - rotatecam**2)
         elif (case2 == 1):
-            print "we are now in case 2"
             rotatecam -= 0.5
             zcoord = -1.0*sqrt(originalsum - rotatecam**2)
-
-        print "the x-coordinate is: ", rotatecam
-        print "the zcoord is: ", zcoord
 
         counterframe -= 1
         drawfunc()
@@ -478,7 +423,6 @@ if __name__ == "__main__":
     glutInitWindowPosition(300, 100)
 
     glutCreateWindow("CS171 HW7")
-
     
     # define grammar
     # number is float form
@@ -562,24 +506,12 @@ if __name__ == "__main__":
     case1 = 1
     case2 = 0
 
-    # Enable depth-buffer test.
-    #glEnable(GL_DEPTH_TEST)
-
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-
-    #glOrtho(-15.0, 15.0, -15.0, 15.0, 1.0, 30.0)
-    #glFrustum(-15.0, 15.0, -20.0, 20.0, 0.5, 30.0)
-
-    #glFrustum(-.3, 0.3, -0.3, 0.3, 1.0, 30.0)
-
-    #gluLookAt(0.0, 0.0, -3.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 
     # viewing angle is 88 degrees, distance between viewer and nearest clipping plane is 0
     # distance between viewer and furthest clipping plane is 10
     gluPerspective(65.0, 2.0, 0.01, 500.0);
-
-    #glOrtho(0.0, 20.0, 0.0, 20.0, -20.0, 20.0)
 
     while (first != ''):
         firstparse = parameter.parseString(first)
@@ -610,19 +542,8 @@ if __name__ == "__main__":
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
 
-    print "the total amount of frames is: ", totalframes
-
-    print "the frame numbers in the file are: ", framenum
-
-    print "The translations for the frames are: ", translationsFram
-
-    print "the scale factors for the frame are: ", scalesFram
-
-    print "the rotations for the frame are: ", rotationsFram
-
     fo.close()
 
-    
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 

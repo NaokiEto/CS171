@@ -85,27 +85,7 @@ def mouseCB(button, state, x, y):
             mouseRightDown = False
             print "wut, this should not be happening"
     print "the state of mouseMiddleDown is: ", mouseMiddleDown
-    '''
-    mvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    print "mvm is: ", mvm
-    glMatrixMode(GL_MODELVIEW)
-    glLoadIdentity()
 
-
-    glTranslatef(mouseX, mouseY, 0)
-    glRotatef(0, 0, 0, 0)
-    glScalef(1.0, 1.0, 1.0)
-    #glRotatef(rotateAngle*180.0/pi, rotateX, rotateY, rotateZ)
-    #glScalef(scaleX, scaleY, scaleZ)
-
-    intermedmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    print "intermediate mvm is: ", intermedmvm
-
-    glMultMatrixf(mvm)
-
-    newmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    print "new mvm is: ", newmvm
-    '''
     mod = glutGetModifiers()
     if (mod == GLUT_ACTIVE_SHIFT):
         print "shift is activated!"
@@ -114,11 +94,8 @@ def mouseCB(button, state, x, y):
 
 def mouseMotionCB(x, y):
     mvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    #print "mvm is: ", mvm
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-
-    #print "the mouseMiddleDown is: ", mouseMiddleDown
 
     # if only the right mouse button is down, then the 
     # translation feature is enabled
@@ -126,11 +103,6 @@ def mouseMotionCB(x, y):
         #print "right right right activated!"
         mouseX = x
         mouseY = y
-
-        #print "the xRes is: ", xRes
-        #print "the yRes is: ", yRes
-        #print "the x-coord is: ", mouseX
-        #print "the y-coord is: ", mouseY
 
         global lastX
         dx = mouseX - lastX
@@ -142,11 +114,8 @@ def mouseMotionCB(x, y):
         glTranslatef(dx/float(100), -1*dy/float(100), 0)
         glRotatef(0, 0, 0, 0)
         glScalef(1.0, 1.0, 1.0)
-        #glRotatef(rotateAngle*180.0/pi, rotateX, rotateY, rotateZ)
-        #glScalef(scaleX, scaleY, scaleZ)
 
         intermedmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-        #print "intermediate mvm is: ", intermedmvm
 
     # If the right button on the mouse is down while 'shift' is pressed simultaneously
     # then the zooming feature is enabled.
@@ -190,59 +159,25 @@ def mouseMotionCB(x, y):
         va = get_arcball_vector(lastRotX, lastRotY)
         vb = get_arcball_vector(currRotX, currRotY)
 
-        #print "the va matrix is: ", va
-        #print "the vb matrix is: ", vb
-
         if (va[0] != vb[0] or va[1] != vb[1]):
 
             angle = acos(min(1.0, np.inner(va, vb)))
 
-            #angle = ((va[0] - vb[0])**2 + (va[1] - vb[1])**2)*0.2
-
-            #print "the angle is: ", angle
-
             axis_normalized = np.cross(va, vb)
 
-            #print "the first point is: (", va[0], ", ", va[1], ")"
-            #print "the first point is: (", vb[0], ", ", vb[1], ")"
-
-            #axis_in_camera_coord = np.array([vb[1] - va[1], vb[0] - va[0], 0])
-
-            #print "the normal is at: (", vb[1] - va[1], ", " , va[0] - vb[0], ")"
-
-            #axis_normalized = axis_in_camera_coord/np.linalg.norm(axis_in_camera_coord)
-
-            #print "the axis_in_camera_coord matrix is: ", axis_in_camera_coord
-
-            #newInter = np.dot(np.array(projMat), np.array(cameraMat)) 
-
-            #newMat = np.dot(newInter, np.array([axis_in_camera_coord[0],
-             #                                   axis_in_camera_coord[1],
-              #                                  axis_in_camera_coord[2],
-               #                                 0.0]))
-
-            #glTranslatef(0, 0, 0)
             glRotatef(angle*180.0/pi,
-                      axis_normalized[0], # * sin(0.5*angle),
-                      axis_normalized[1], # * sin(0.5*angle),
-                      axis_normalized[2]) # * sin(0.5 * angle),
-            #glScalef(1.0, 1.0, 1.0)
-
-            #print "the camera matrix is: ", cameraMat
+                      axis_normalized[0],
+                      axis_normalized[1],
+                      axis_normalized[2])
 
             lastRotX = currRotX
             lastRotY = currRotY
 
-#def redraw(worldArray):  
-
 def draw1():
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    #glPushMatrix()
 
     print len(verticesAccum)
-
-    #print "the scale factor list is: ", scalefAccum
 
     for i in range(len(translateAccum)):
         glPushMatrix()
@@ -261,14 +196,6 @@ def draw1():
             scaleY = scalefAccum[i][3*j + 1]
             scaleZ = scalefAccum[i][3*j + 2]
 
-            # calculate the separator matrix (S = TRS)
-            # it is for Object Space to World Space
-            # also for transformed normal matrix
-
-            #print "the translation is: ", translX, ", ", translY, ", ", translZ
-            #print "the rotation is: ", rotateX, ", ", rotateY, ", ", rotateZ, ", ", rotateAngle
-            #print "the scale factor is: ", scaleX, scaleY, scaleZ
-
             glTranslatef(translX, translY, translZ)
             glRotatef(rotateAngle*180.0/pi, rotateX, rotateY, rotateZ)
             glScalef(scaleX, scaleY, scaleZ)
@@ -282,46 +209,24 @@ def draw1():
         emissi = [0.0, 0.0, 0.0, 1.0]
 
         glMaterialfv(GL_FRONT, GL_AMBIENT, ambien)
-        #print "the ambient2 is: ", ambien
         glMaterialfv(GL_FRONT, GL_DIFFUSE, diffus)
-        #print "the diffuse2 is: ", diffus
         glMaterialfv(GL_FRONT, GL_SPECULAR, specul)
-        #print "the specular2 is: ", specul
-        #print "the emission2 is: ", emissi
         glMaterialfv(GL_FRONT, GL_EMISSION, emissi)
-        #print "the shiny2 is: ", shinin
         glMaterialfv(GL_FRONT, GL_SHININESS, shinin)
 
         IPT = verticesAccum[i]
         INT = normsAccum[i]
 
-        #print "the verticesAccum is: ", IPT
-        #print "the normsAccum is: ", INT
-
         # activate and specify pointer to vertex array
         glEnableClientState(GL_NORMAL_ARRAY)
-        #glEnableClientState(GL_COLOR_ARRAY)
         glEnableClientState(GL_VERTEX_ARRAY)
 
         glNormalPointer(GL_FLOAT, 0, INT)
-        #glDrawElements(GL_TRIANGLES, len(worldNorms) * 3, GL_UNSIGNED_BYTE, worldNorms)
-
-
         glVertexPointer(3, GL_FLOAT, 0, IPT)
-
-        #print len(worldPoints) * 3
-        # draw a cube
-        #glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) # clear the screen
-        #glLoadIdentity()                                   # reset position
-        # TODO draw rectangle
-        #glutDisplayFunc(redraw(worldPoints)) 
-        #glDrawElements(GL_TRIANGLES, len(worldPoints) * 3, GL_UNSIGNED_BYTE, worldPoints)
-        #glDrawElements(GL_TRIANGLES, len(both) * 3, GL_UNSIGNED_INT, both)
 
         glDrawArrays(GL_TRIANGLES, 0, len(IPT))
 
         glPopMatrix()
-        #print "pop successful"
         glutSwapBuffers() 
 
         # deactivate vertex arrays after drawing
@@ -331,18 +236,6 @@ def draw1():
 
 # run the script
 if __name__ == "__main__":
-    # initializing the mouse presses to no presses
-    #global mouseLeftDown 
-    #mouseLeftDown = False
-    #global mouseRightDown 
-    #mouseRightDown = False
-    #global mouseMiddleDown 
-    #mouseMiddleDown = False
-
-    #global mouseX 
-    #mouseX = 0
-    #global mouseY 
-    #mouseY = 0
 
     cameraX = 0
     cameraY = 0
@@ -470,12 +363,7 @@ if __name__ == "__main__":
 
                     global lastZoom
                     lastZoom = cameraZ
-
-
-
                     campos = np.array([cameraX, cameraY, cameraZ])
-
-                    print "the position of the camera is: ", campos
 
                 # orientation paramter
                 elif (firstparse[0] == 'orientation'):
@@ -483,8 +371,6 @@ if __name__ == "__main__":
                     y = firstparse[2]
                     z = firstparse[3]
                     angle = firstparse[4]
-                    print "the orientation is: ", x, ", ", y, ", ", z, ", ", angle
-                    #print "the params are: ", y
 
                 # near distance parameter
                 elif (firstparse[0] == 'nearDistance'):
@@ -517,7 +403,6 @@ if __name__ == "__main__":
 
             # inverse rotation matrix (for orientation of camera) (angle is in degrees)
             glRotatef(-1*angle*180.0/pi, x, y, z)
-            print "the angle is: ", -1*angle*180.0/pi
 
             # multiply with inverse translation matrix
             glTranslatef(-1.0*cameraX, -1.0*cameraY, -1.0*cameraZ)
@@ -530,14 +415,12 @@ if __name__ == "__main__":
 
             # calculate the camera matrix
             # World space to camera space
-            #cameraMat = np.dot(translateCam, rotationCam)
 
             # calculate the Perspective Projection matrix
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
             glFrustum(l, r, b, t, n, f)
-            # Save the perspective projection matrix
-            #glPushMatrix()
+
             global projMat
             projMat = glGetFloatv(GL_PROJECTION_MATRIX)
 
@@ -586,33 +469,16 @@ if __name__ == "__main__":
                         spec[0] = firstparse[1]
                         spec[1] = firstparse[2]
                         spec[2] = firstparse[3]
-                        #totalred += red
-                        #totalgreen += green
-                        #totalblue += blue
                     
                     first = fo.readline()
-                print "light position"
-                print lightpos
-                print "diffusion"
-                print diff
-                print "specular"
-                print spec
-                print "ambient"
-                print amb
 
                 glEnable(GL_LIGHTING)
                 glLightModelfv(GL_LIGHT_MODEL_AMBIENT, amb)
                 glLightfv(GL_LIGHTC[lightidx], GL_AMBIENT, amb)
-                #print "the light ambient is: ", amb
                 glLightfv(GL_LIGHTC[lightidx], GL_DIFFUSE, diff)
-                #print "the light diffuse is: ", diff
                 glLightfv(GL_LIGHTC[lightidx], GL_SPECULAR, spec)
-                #print "the light specular is: ", spec
                 glLightfv(GL_LIGHTC[lightidx], GL_POSITION, lightpos)
-                #print "the light position is: ", lightpos
                 glEnable(GL_LIGHTC[lightidx])
-
-                #glPushMatrix()
 
             first = fo.readline()
             firstparse = parameter.parseString(first)
@@ -620,8 +486,6 @@ if __name__ == "__main__":
         # Turn on lighting.  You can turn it off with a similar call to
         # glDisable().
 
-        # print "the light matrix is: "
-        # print lights
         # if we reach the Separator parameter
         while (len(firstparse) != 0 and (firstparse[0] == 'Separator')):
             first = fo.readline()
@@ -680,7 +544,6 @@ if __name__ == "__main__":
                         normalizedrY = rY/sqrt(rX**2 + rY**2 + rZ**2)
                         normalizedrZ = rZ/sqrt(rX**2 + rY**2 + rZ**2)
                         rAngle = float(firstparse[4])
-                        #rotationSep = rotationMatrix(normalizedrX, normalizedrY, normalizedrZ, rAngle)
                         
                     # scale factor
                     elif (firstparse[0] == 'scaleFactor'):
@@ -710,10 +573,6 @@ if __name__ == "__main__":
                 scalefSep.append(sfX)
                 scalefSep.append(sfY)
                 scalefSep.append(sfZ) 
-                    
-                #glTranslatef(tX, tY, tZ)
-                #glRotatef(rAngle*180.0/pi, normalizedrX, normalizedrY, normalizedrZ)
-                #glScalef(sfX, sfY, sfZ)
 
                 # end of Transform block parameter
                 if (len(firstparse) != 0 and (firstparse[0] == '}')):
@@ -774,17 +633,6 @@ if __name__ == "__main__":
                 
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
-            #print "so so so so "
-            #print "amb"
-            #print amb
-            #print "diff"
-            #print diff
-            #print "spec"
-            #print spec
-            #print "emit"
-            #print emit
-            #print "shiny"
-            #print shiny
 
             while (first.strip() == ''):
                 first = fo.readline()
@@ -797,7 +645,6 @@ if __name__ == "__main__":
                 if (len(firstparse) != 0 and (firstparse[0] == 'point')):
                     # Create a list of the coordinates
                     coordsList = []
-                    #coordsNoTuple = []
                     # to compensate for the point
                     f = 2
                     while (firstparse[f] != ']' and firstparse[f] != '}' and first.strip() != '}'):
@@ -833,7 +680,6 @@ if __name__ == "__main__":
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
                 if (len(firstparse) != 0 and (firstparse[0] == 'vector')):
-                    #print "wut wut wut wtu wut"
                     # Create a list of the normals
                     vectorsList = []
                     # to compensate for the point
@@ -858,10 +704,7 @@ if __name__ == "__main__":
             if (len(firstparse) != 0 and (firstparse[0] == '}')):
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
-            #print "howd"
-            #print vectorsList
 
-            print "wut2"
             # start into the IndexedFaceSet block parameter
             if (len(firstparse) != 0 and (firstparse[0] == 'IndexedFaceSet')):
                 first = fo.readline()
@@ -875,9 +718,6 @@ if __name__ == "__main__":
                 worldNorms = []
                 # Create a list of both vertices and norms indices
                 both = []
-                # indices of the coordinates
-                #indices = []
-                #indicestoRend = []
                 RealIndices = []
                 NormIndices = []
 
@@ -890,13 +730,10 @@ if __name__ == "__main__":
 
                 # for the first row, with the coordIndex as firstparse[0]
                 i = 0
-                #print "wtf"
                 # Go through the line
                 space = 0
                 while (i < len(firstparse) and firstparse[0] != 'normalIndex'):
                     k = firstparse[i]
-                    #print "the term is: ", k
-                    #print "the index is: ", i
                     # if the element is a comma, bracket, or coordIndex, then move on to next element
                     while ((k == ',') or (k == '[') or (k == ']') or (k == 'coordIndex')):
                         if (i < len(firstparse) - 1):
@@ -930,23 +767,13 @@ if __name__ == "__main__":
                             polygonvertices.append(lastpoint)
                             # add the current point
                             polygonvertices.append(int(k))
-                        print "the index is at : ", int(k)
-                        print "heads will roll"
 
                     # if there are less than 3 points in the list, add another point
                     elif (len(polygonvertices) < 3):
                         polygonvertices.append(int(k))
-                        print "nooooooo ", int(k)
 
                     # if reach the end of a face
                     if (k == -1):
-                        print "we go here! ", firstparse
-                        # Put the list of 3 points in the big list
-                        #worldPoints.append(polygonvertices)
-                        #RealIndices.append(polygonvertices[0])
-                        #RealIndices.append(polygonvertices[1])
-                        #RealIndices.append(polygonvertices[2])
-                        #both.append(polygonvertices)
                         # reset the list of 3 points to an empty list
                         polygonvertices = []
                         # if the next index is in the line
@@ -970,21 +797,9 @@ if __name__ == "__main__":
                         print "hey"
                     i += 1
                     print "dum dum dum", polygonvertices
-                #print "hahahahahahahahahahahahahah              "
-                #print worldPoints
-
-                #print int(worldPoints[6]) + worldPoints[1]
-
-                #print toRender
-                #print indicestoRend
-                #print indexforboth
-                #print len(indicestoRend)
-                #print len(indexforboth)
 
                 print "life sucks"
           
-                #first = fo.readline()
-                #firstparse = parameter.parseString(first)
                 if (firstparse[0] == 'normalIndex'):
                     firstpoint = -100
                     j = 0
@@ -1001,8 +816,6 @@ if __name__ == "__main__":
                                 j = 0
                                 print "mhm, ", firstparse
                                 k = firstparse[j]
-                        
-                        #print "for normalindex: ", firstparse
 
                         # if  we have 3 points (whether we reach 1 or -1), add the triangle
                         # to the big list, and reset the 3point list to have the first point
@@ -1034,19 +847,12 @@ if __name__ == "__main__":
                         # if reach the end of a face
                         if (k == -1):
                             print "we go here!2"
-                            # Put the list of 3 points in the big list
-                            #worldPoints.append(polygonvertices)
-                            #RealIndices.append(polygonvertices[0])
-                            #RealIndices.append(polygonvertices[1])
-                            #RealIndices.append(polygonvertices[2])
-                            #both.append(polygonvertices)
                             # reset the list of 3 points to an empty list
                             normvertices = []
                             # if the next index is in the line
                             # we have to add 2 to accomodate that comma
                             if (j+2 < len(firstparse)):
                                 firstpoint = int(firstparse[j+2])
-                                #print "the first point is: ", firstpoint
                                 normvertices.append(firstpoint)
                                 # move to next comma after first point
                                 j += 2
@@ -1060,34 +866,19 @@ if __name__ == "__main__":
                             print "hey2 ", normvertices
                         j += 1
                         print "ho ho ho ho ho ho ho heheheheheheheh ", normvertices
-                        #first = fo.readline()
-                        #print "hahahahahahahahahahahahahah
-                        #print worldNorms
                                 
                     first = fo.readline()
                     firstparse = parameter.parseString(first)
-                #print worldPoints
 
             print "wut3"
 
             for i in range(len(worldPoints)):
                 both.append(worldPoints[i])
-            #print "both is: "
-            #print both
             
             first = fo.readline()
 
-            #print "the coordsList is: "
-            #print coordsList
-            #print "the vectorsList is: "
-            #print vectorsList
-
             print "The real indices of vertices are: ", RealIndices
             print len(RealIndices)
-
-            #print "The real indices of the normals are: ", NormIndices
-            #print len(NormIndices)
-
 
             IndexedPointsTuple = []
             IndexedPoints = []
@@ -1119,27 +910,7 @@ if __name__ == "__main__":
             print len(NormIndices)
             print NormIndices
 
-            #print "for the vertices: "
-            #print IndexedPoints
-            #print len(IndexedPoints)
-
-            #print "for the norms: "
-            #print IndexedNorms
-            #print len(IndexedNorms)
-
-            #print "for the vertices tuples: "
-            #print IndexedPointsTuple
-            #print len(IndexedPointsTuple)
-            
-            #print "for the norms tuples: "
-            #print IndexedNormsTuple
-            #print len(IndexedNormsTuple)
-
             print "hi there!"
-            #draw1()
-            #glutPostRedisplay()
-            #first = fo.readline()
-            #print "the next line2 is: ", first
             translateAccum.append(translateSep)
             rotateAccum.append(rotateSep)
             scalefAccum.append(scalefSep)
@@ -1171,7 +942,6 @@ if __name__ == "__main__":
     glutKeyboardFunc(keyfunc)
     glutMouseFunc(mouseCB)
     glutMotionFunc(mouseMotionCB)
-    #mvm = (GLfloat * 16)()
 
     glutMainLoop()
     glPopMatrix()
