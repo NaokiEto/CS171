@@ -47,8 +47,6 @@ def keyfunc(key, x, y):
 def mouseCB(button, state, x, y):
     mouseX = x
     mouseY = y
-    global mouseMiddleDown 
-    mouseMiddleDown = False
     global mouseLeftDown 
     mouseLeftDown = False
     global mouseRightDown 
@@ -57,10 +55,9 @@ def mouseCB(button, state, x, y):
     global shiftPressed
     shiftPressed = False
 
+    # if the left button is pressed down (for mouse), rotation will happen
     if(button == GLUT_LEFT_BUTTON):
         if(state == GLUT_DOWN):
-            print "the x-coordinate pixel is: ", x
-            print "the y-coordinate pixel is: ", y
             mouseLeftDown = True
             global lastRotX
             lastRotX = (x/float(xRes) - 0.5)*2.0
@@ -74,15 +71,11 @@ def mouseCB(button, state, x, y):
     elif(button == GLUT_RIGHT_BUTTON):
         if(state == GLUT_DOWN):
             mouseRightDown = True
-            print "mouse Middle is down!"
         elif(state == GLUT_UP):
             mouseRightDown = False
-            print "wut, this should not be happening"
-    print "the state of mouseMiddleDown is: ", mouseMiddleDown
 
     mod = glutGetModifiers()
     if (mod == GLUT_ACTIVE_SHIFT):
-        print "shift is activated!"
         shiftPressed = True
 
 
@@ -94,7 +87,6 @@ def mouseMotionCB(x, y):
     # if only the right mouse button is down, then the 
     # translation feature is enabled
     if (mouseRightDown and shiftPressed == False):
-        #print "right right right activated!"
         mouseX = x
         mouseY = y
 
@@ -126,7 +118,6 @@ def mouseMotionCB(x, y):
     glMultMatrixf(mvm)
 
     newmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    #print "new mvm is: ", newmvm
     
     # tell GLUT to call the redrawing function, in this case redraw()
     glutPostRedisplay()
@@ -137,13 +128,6 @@ def mouseMotionCB(x, y):
         global lastRotX
         global lastRotY
 
-        #print "the currRotX is: ", currRotX
-        #print "the lastRotX is: ", lastRotX
-
-        #cameraAngleY += (x - mouseX)
-        #cameraAngleX += (y - mouseY)
-        #print "the x-coordinate pixel2 is: ", x
-        #print "the y-coordinate pixel2 is: ", y
         mouseX = (x/float(xRes) - 0.5)*2.0
         mouseY = (1.0 - y/float(yRes) - 0.5)*2.0
 
@@ -171,8 +155,6 @@ def draw1():
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-    print len(verticesAccum)
-
     for i in range(len(translateAccum)):
         glPushMatrix()
         lenOfSep = len(translateAccum[i])/3
@@ -194,41 +176,39 @@ def draw1():
             glRotatef(rotateAngle*180.0/pi, rotateX, rotateY, rotateZ)
             glScalef(scaleX, scaleY, scaleZ)
 
-        # check if length of specular or shininess
-        if (len(verticesAccum) != 0):
 
-            ambien = ambientAccum[i]
-            diffus = diffuseAccum[i]
-            specul = specularAccum[i]
-            shinin = shininess[i]
+        ambien = ambientAccum[i]
+        diffus = diffuseAccum[i]
+        specul = specularAccum[i]
+        shinin = shininess[i]
 
-            emissi = [0.0, 0.0, 0.0, 1.0]
+        emissi = [0.0, 0.0, 0.0, 1.0]
 
-            glMaterialfv(GL_FRONT, GL_AMBIENT, ambien)
-            glMaterialfv(GL_FRONT, GL_DIFFUSE, diffus)
-            glMaterialfv(GL_FRONT, GL_SPECULAR, specul)
-            glMaterialfv(GL_FRONT, GL_EMISSION, emissi)
-            glMaterialfv(GL_FRONT, GL_SHININESS, shinin)
+        glMaterialfv(GL_FRONT, GL_AMBIENT, ambien)
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, diffus)
+        glMaterialfv(GL_FRONT, GL_SPECULAR, specul)
+        glMaterialfv(GL_FRONT, GL_EMISSION, emissi)
+        glMaterialfv(GL_FRONT, GL_SHININESS, shinin)
 
-            IPT = verticesAccum[i]
-            INT = normsAccum[i]
+        IPT = verticesAccum[i]
+        INT = normsAccum[i]
 
-            # activate and specify pointer to vertex array
-            glEnableClientState(GL_NORMAL_ARRAY)
-            glEnableClientState(GL_VERTEX_ARRAY)
+        # activate and specify pointer to vertex array
+        glEnableClientState(GL_NORMAL_ARRAY)
+        glEnableClientState(GL_VERTEX_ARRAY)
 
-            glNormalPointer(GL_FLOAT, 0, INT)
-            glVertexPointer(3, GL_FLOAT, 0, IPT)
+        glNormalPointer(GL_FLOAT, 0, INT)
+        glVertexPointer(3, GL_FLOAT, 0, IPT)
 
-            glDrawArrays(GL_TRIANGLES, 0, len(IPT))
+        glDrawArrays(GL_TRIANGLES, 0, len(IPT))
 
-            glPopMatrix()
-            glutSwapBuffers() 
+        glPopMatrix()
+        glutSwapBuffers() 
 
-            # deactivate vertex arrays after drawing
-            glDisableClientState(GL_VERTEX_ARRAY)
-            #glDisableClientState(GL_COLOR_ARRAY)
-            glDisableClientState(GL_NORMAL_ARRAY)
+        # deactivate vertex arrays after drawing
+        glDisableClientState(GL_VERTEX_ARRAY)
+        #glDisableClientState(GL_COLOR_ARRAY)
+        glDisableClientState(GL_NORMAL_ARRAY)
 
 # run the script
 if __name__ == "__main__":
@@ -239,50 +219,39 @@ if __name__ == "__main__":
 
     glutInit(sys.argv)
 
+    # whether to pick flat, gourad, or phong shading
+    # 0 is wireframe, 1 is flat, 2 is gouraud
+    shade = int(sys.argv[1])
+
+    # x dimension size
+    xRes = int(sys.argv[2])
+
+    # y dimension size
+    yRes = int(sys.argv[3])
+
+    # iv file name to input
+    ivFile = sys.argv[4]
+
     # Get a double-buffered, depth-buffer-enabled window, with an
     # alpha channel.
     # These options aren't really necessary but are here for examples.
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
 
-    if (len(sys.argv) == 5):
-        # whether to pick flat, gourad, or phong shading
-        # 0 is wireframe, 1 is flat, 2 is gouraud
-        shade = int(sys.argv[1])
-
-        # x dimension size
-        xRes = int(sys.argv[2])
-
-        # y dimension size
-        yRes = int(sys.argv[3])
-
-        # iv file name to input
-        ivFile = sys.argv[4]
-
-        # Tell openGL to use Gouraud shading:
-        if (shade == 2):
-            glShadeModel(GL_SMOOTH)
-
-        if (shade == 1):
-            glShadeModel(GL_FLAT)
-
-        # Tell opennGL to use WireFrame
-        if (shade == 0):
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-
-    elif (len(sys.argv) == 4):
-        # x dimension size
-        xRes = int(sys.argv[1])
-
-        # y dimension size
-        yRes = int(sys.argv[2])
-
-        # iv file name to input
-        ivFile = sys.argv[3]
-
     glutInitWindowSize(xRes, yRes)
     glutInitWindowPosition(300, 100)
 
     glutCreateWindow("CS171 HW4")
+
+    # Tell openGL to use Gouraud shading:
+    if (shade == 2):
+        glShadeModel(GL_SMOOTH)
+
+    if (shade == 1):
+        glShadeModel(GL_FLAT)
+
+    # Tell opennGL to use WireFrame
+    if (shade == 0):
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
     
     # Enable back-face culling:
     glEnable(GL_CULL_FACE)
@@ -336,14 +305,9 @@ if __name__ == "__main__":
     specularAccum = []
     shininess = []
 
-    worldPoints = []
-
     # these are vertices and norms accumulated for all separators.
     verticesAccum = []
     normsAccum = []
-
-    # these are the vertices for lineset
-    lineSet = []
     
     global lastRotX
     lastRotX = 0
@@ -424,9 +388,6 @@ if __name__ == "__main__":
 
             global cameraMat
             cameraMat = glGetFloatv(GL_MODELVIEW_MATRIX)
-
-            # calculate the camera matrix
-            # World space to camera space
 
             # calculate the Perspective Projection matrix
             glMatrixMode(GL_PROJECTION)
@@ -652,7 +613,6 @@ if __name__ == "__main__":
 
             # entering the Coordinate subparameter
             if (len(firstparse) != 0 and (firstparse[0] == 'Coordinate')):
-                print "We are entering the Coordinate parameter"
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
                 if (len(firstparse) != 0 and (firstparse[0] == 'point')):
@@ -660,12 +620,6 @@ if __name__ == "__main__":
                     coordsList = []
                     # to compensate for the point
                     f = 2
-
-                    # if the length of the line is less than 2 (so if it is point [ )
-                    if (len(firstparse) < 3):
-                        first = fo.readline()
-                        firstparse = parameter.parseString(first)
-                        f = 0
                     while (firstparse[f] != ']' and firstparse[f] != '}' and first.strip() != '}'):
                         xArr = float(firstparse[f])
                         yArr = float(firstparse[f+1])
@@ -677,9 +631,6 @@ if __name__ == "__main__":
                         first = fo.readline()
                         firstparse = parameter.parseString(first)
                         f = 0
-
-                print "the coordsList is: ",  coordsList
-
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
             while (first.strip() == ''):
@@ -690,8 +641,6 @@ if __name__ == "__main__":
             if (len(firstparse) != 0 and (firstparse[0] == '}')):
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
-
-            print "wut"
 
             # entering the Normal subparameter
             if (len(firstparse) != 0 and (firstparse[0] == 'Normal')):
@@ -722,34 +671,6 @@ if __name__ == "__main__":
             if (len(firstparse) != 0 and (firstparse[0] == '}')):
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
-
-            # this is for the lineset case
-            if (len(firstparse) != 0 and (firstparse[0] == 'LineSet')):
-                first = fo.readline()
-                print "when we are at lineset, the line reads as: ", first
-
-                firstparse = parameter.parseString(first)
-
-                # for the first row, with the coordIndex as firstparse[0]
-                i = 0
-                # Go through the line
-                space = 0
-                while (i < len(firstparse)):
-
-                    k = firstparse[i]
-                    # if the element is a comma, bracket, or coordIndex, then move on to next element
-                    while ((k == ',') or (k == '[') or (k == ']')):
-                        if (i < len(firstparse) - 1):
-                            i += 1
-                            k = firstparse[i]
-                            print "the firstparse first is: ", firstparse
-                            print k
-                        else:
-                            first = fo.readline()
-                            firstparse = parameter.parseString(first)
-                            i = 0
-                            k = firstparse[i]
-                            print "the firstparse is: ", firstparse
 
             # start into the IndexedFaceSet block parameter
             if (len(firstparse) != 0 and (firstparse[0] == 'IndexedFaceSet')):
@@ -785,18 +706,14 @@ if __name__ == "__main__":
                         if (i < len(firstparse) - 1):
                             i += 1
                             k = firstparse[i]
-                            print "the firstparse first is: ", firstparse
-                            print k
                         else:
                             first = fo.readline()
                             firstparse = parameter.parseString(first)
                             i = 0
                             k = firstparse[i]
-                            print "the firstparse is: ", firstparse
                     # if  we have 3 points (whether we reach 1 or -1), add the triangle
                     # to the big list, and reset the 3point list to have the first point
                     if (len(polygonvertices) == 3):
-                        print "never reach here?"
                         worldPoints.append(polygonvertices)
                         if (firstpoint == -100):
                             firstpoint = polygonvertices[0]
@@ -805,7 +722,6 @@ if __name__ == "__main__":
                         RealIndices.append(polygonvertices[2])
                         lastpoint = polygonvertices[2]
                         polygonvertices = []
-                        print polygonvertices
                         if (int(k) != -1):
                             # add the very first point
                             polygonvertices.append(firstpoint)
@@ -826,8 +742,6 @@ if __name__ == "__main__":
                         # we have to add 2 to accomodate that comma
                         if (i+2 < len(firstparse)):
                             firstpoint = int(firstparse[i+2])
-                            print "the new first point is: ", firstpoint
-                            #print "the first point is: ", firstpoint
                             polygonvertices.append(firstpoint)
                             # move to next comma after first point
                             i += 2
@@ -839,12 +753,7 @@ if __name__ == "__main__":
                                 firstpoint = int(firstparse[0])
                                 polygonvertices.append(firstpoint)
                             i = 0
-                        
-                        print "hey"
                     i += 1
-                    print "dum dum dum", polygonvertices
-
-                print "life sucks"
           
                 if (firstparse[0] == 'normalIndex'):
                     firstpoint = -100
@@ -860,13 +769,11 @@ if __name__ == "__main__":
                                 first = fo.readline()
                                 firstparse = parameter.parseString(first)
                                 j = 0
-                                print "mhm, ", firstparse
                                 k = firstparse[j]
 
                         # if  we have 3 points (whether we reach 1 or -1), add the triangle
                         # to the big list, and reset the 3point list to have the first point
                         if (len(normvertices) == 3):
-                            print "2never reach here?"
                             worldNorms.append(normvertices)
                             if (firstpoint == -100):
                                 firstpoint = normvertices[0]
@@ -875,7 +782,6 @@ if __name__ == "__main__":
                             NormIndices.append(normvertices[2])
                             lastpoint = normvertices[2]
                             normvertices = []
-                            print normvertices
                             if (int(k) != -1):
                                 # add the very first point
                                 normvertices.append(firstpoint)
@@ -883,16 +789,12 @@ if __name__ == "__main__":
                                 normvertices.append(lastpoint)
                                 # add the current point
                                 normvertices.append(int(k))
-                            print "2the index is at : ", int(k)
-                            print "norms will roll"
 
                         # if there are less than 3 points in the list, add another point
                         elif (len(normvertices) < 3):
                             normvertices.append(int(k))
-                            print "nooooooo2 ", int(k)
                         # if reach the end of a face
                         if (k == -1):
-                            print "we go here!2"
                             # reset the list of 3 points to an empty list
                             normvertices = []
                             # if the next index is in the line
@@ -909,23 +811,15 @@ if __name__ == "__main__":
                                     firstpoint = int(firstparse[0])
                                     normvertices.append(firstpoint)
                                 j = 0
-                            print "hey2 ", normvertices
                         j += 1
-                        print "ho ho ho ho ho ho ho heheheheheheheh ", normvertices
                                 
                     first = fo.readline()
                     firstparse = parameter.parseString(first)
 
-            print "wut3"
-
-            if (len(worldPoints) != 0):
-                for i in range(len(worldPoints)):
-                    both.append(worldPoints[i])
-                
+            for i in range(len(worldPoints)):
+                both.append(worldPoints[i])
+            
             first = fo.readline()
-
-            print "The real indices of vertices are: ", RealIndices
-            print len(RealIndices)
 
             IndexedPointsTuple = []
             IndexedPoints = []
@@ -949,15 +843,6 @@ if __name__ == "__main__":
                     IndexedNorms.append(tupleNorm[1])
                     IndexedNorms.append(tupleNorm[2])
 
-            print "the RealIndices are: "
-            print len(RealIndices)
-            print RealIndices
-
-            print "the NormIndices are: "
-            print len(NormIndices)
-            print NormIndices
-
-            print "hi there!"
             translateAccum.append(translateSep)
             rotateAccum.append(rotateSep)
             scalefAccum.append(scalefSep)
@@ -966,20 +851,7 @@ if __name__ == "__main__":
             normsAccum.append(IndexedNormsTuple)
         first = fo.readline()
         firstparse = parameter.parseString(first)
-        print "the next line1 is: ", firstparse
-        if (first == ''):
-            print "hey! it ended!"
-            print "the translateAccum is: ", translateAccum
-            print "the rotateAccum is: ", rotateAccum
-            print "the scalefAccum is: ", scalefAccum
 
-            print "the ambientAccum: ", ambientAccum
-            print "the diffuseAccum: ", diffuseAccum
-            print "the specularAccum: ", specularAccum
-            print "the shininess is: ", shininess
-
-            print "the verticesAccum is: ", verticesAccum
-            print "the normsAccum is: ", normsAccum
     fo.close()
 
     glutDisplayFunc(draw1)

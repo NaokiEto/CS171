@@ -68,12 +68,6 @@ def mouseCB(button, state, x, y):
             global lastRotY
             lastRotY = (1.0 - y/float(yRes) - 0.5)*2.0
 
-            #global currRotX
-            #currRotX = (x/float(xRes) - 0.5)*2.0
-
-            #global currRotY
-            #currRotY = (1.0 - y/float(yRes) - 0.5)*2.0
-
         elif(state == GLUT_UP):
             mouseLeftDown = False
 
@@ -200,39 +194,41 @@ def draw1():
             glRotatef(rotateAngle*180.0/pi, rotateX, rotateY, rotateZ)
             glScalef(scaleX, scaleY, scaleZ)
 
+        # check if length of specular or shininess
+        if (len(verticesAccum) != 0):
 
-        ambien = ambientAccum[i]
-        diffus = diffuseAccum[i]
-        specul = specularAccum[i]
-        shinin = shininess[i]
+            ambien = ambientAccum[i]
+            diffus = diffuseAccum[i]
+            specul = specularAccum[i]
+            shinin = shininess[i]
 
-        emissi = [0.0, 0.0, 0.0, 1.0]
+            emissi = [0.0, 0.0, 0.0, 1.0]
 
-        glMaterialfv(GL_FRONT, GL_AMBIENT, ambien)
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, diffus)
-        glMaterialfv(GL_FRONT, GL_SPECULAR, specul)
-        glMaterialfv(GL_FRONT, GL_EMISSION, emissi)
-        glMaterialfv(GL_FRONT, GL_SHININESS, shinin)
+            glMaterialfv(GL_FRONT, GL_AMBIENT, ambien)
+            glMaterialfv(GL_FRONT, GL_DIFFUSE, diffus)
+            glMaterialfv(GL_FRONT, GL_SPECULAR, specul)
+            glMaterialfv(GL_FRONT, GL_EMISSION, emissi)
+            glMaterialfv(GL_FRONT, GL_SHININESS, shinin)
 
-        IPT = verticesAccum[i]
-        INT = normsAccum[i]
+            IPT = verticesAccum[i]
+            INT = normsAccum[i]
 
-        # activate and specify pointer to vertex array
-        glEnableClientState(GL_NORMAL_ARRAY)
-        glEnableClientState(GL_VERTEX_ARRAY)
+            # activate and specify pointer to vertex array
+            glEnableClientState(GL_NORMAL_ARRAY)
+            glEnableClientState(GL_VERTEX_ARRAY)
 
-        glNormalPointer(GL_FLOAT, 0, INT)
-        glVertexPointer(3, GL_FLOAT, 0, IPT)
+            glNormalPointer(GL_FLOAT, 0, INT)
+            glVertexPointer(3, GL_FLOAT, 0, IPT)
 
-        glDrawArrays(GL_TRIANGLES, 0, len(IPT))
+            glDrawArrays(GL_TRIANGLES, 0, len(IPT))
 
-        glPopMatrix()
-        glutSwapBuffers() 
+            glPopMatrix()
+            glutSwapBuffers() 
 
-        # deactivate vertex arrays after drawing
-        glDisableClientState(GL_VERTEX_ARRAY)
-        #glDisableClientState(GL_COLOR_ARRAY)
-        glDisableClientState(GL_NORMAL_ARRAY)
+            # deactivate vertex arrays after drawing
+            glDisableClientState(GL_VERTEX_ARRAY)
+            #glDisableClientState(GL_COLOR_ARRAY)
+            glDisableClientState(GL_NORMAL_ARRAY)
 
 # run the script
 if __name__ == "__main__":
@@ -243,39 +239,50 @@ if __name__ == "__main__":
 
     glutInit(sys.argv)
 
-    # whether to pick flat, gourad, or phong shading
-    # 0 is wireframe, 1 is flat, 2 is gouraud
-    shade = int(sys.argv[1])
-
-    # x dimension size
-    xRes = int(sys.argv[2])
-
-    # y dimension size
-    yRes = int(sys.argv[3])
-
-    # iv file name to input
-    ivFile = sys.argv[4]
-
     # Get a double-buffered, depth-buffer-enabled window, with an
     # alpha channel.
     # These options aren't really necessary but are here for examples.
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
 
+    if (len(sys.argv) == 5):
+        # whether to pick flat, gourad, or phong shading
+        # 0 is wireframe, 1 is flat, 2 is gouraud
+        shade = int(sys.argv[1])
+
+        # x dimension size
+        xRes = int(sys.argv[2])
+
+        # y dimension size
+        yRes = int(sys.argv[3])
+
+        # iv file name to input
+        ivFile = sys.argv[4]
+
+        # Tell openGL to use Gouraud shading:
+        if (shade == 2):
+            glShadeModel(GL_SMOOTH)
+
+        if (shade == 1):
+            glShadeModel(GL_FLAT)
+
+        # Tell opennGL to use WireFrame
+        if (shade == 0):
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+
+    elif (len(sys.argv) == 4):
+        # x dimension size
+        xRes = int(sys.argv[1])
+
+        # y dimension size
+        yRes = int(sys.argv[2])
+
+        # iv file name to input
+        ivFile = sys.argv[3]
+
     glutInitWindowSize(xRes, yRes)
     glutInitWindowPosition(300, 100)
 
     glutCreateWindow("CS171 HW4")
-
-    # Tell openGL to use Gouraud shading:
-    if (shade == 2):
-        glShadeModel(GL_SMOOTH)
-
-    if (shade == 1):
-        glShadeModel(GL_FLAT)
-
-    # Tell opennGL to use WireFrame
-    if (shade == 0):
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
     
     # Enable back-face culling:
     glEnable(GL_CULL_FACE)
@@ -329,9 +336,14 @@ if __name__ == "__main__":
     specularAccum = []
     shininess = []
 
+    worldPoints = []
+
     # these are vertices and norms accumulated for all separators.
     verticesAccum = []
     normsAccum = []
+
+    # these are the vertices for lineset
+    lineSet = []
     
     global lastRotX
     lastRotX = 0
@@ -500,6 +512,10 @@ if __name__ == "__main__":
             rotateSep = []
             scalefSep = []
 
+            while (first.strip() == ''):
+                first = fo.readline()
+                firstparse = parameter.parseString(first)
+
             # if we reach the Transform sub-parameter
             while (len(firstparse) != 0 and (firstparse[0] == 'Transform')):
                 first = fo.readline()
@@ -640,6 +656,7 @@ if __name__ == "__main__":
 
             # entering the Coordinate subparameter
             if (len(firstparse) != 0 and (firstparse[0] == 'Coordinate')):
+                print "We are entering the Coordinate parameter"
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
                 if (len(firstparse) != 0 and (firstparse[0] == 'point')):
@@ -647,14 +664,16 @@ if __name__ == "__main__":
                     coordsList = []
                     # to compensate for the point
                     f = 2
+
+                    # if the length of the line is less than 2 (so if it is point [ )
+                    if (len(firstparse) < 3):
+                        first = fo.readline()
+                        firstparse = parameter.parseString(first)
+                        f = 0
                     while (firstparse[f] != ']' and firstparse[f] != '}' and first.strip() != '}'):
                         xArr = float(firstparse[f])
                         yArr = float(firstparse[f+1])
                         zArr = float(firstparse[f+2])
-
-                        #coordsNoTuple.append(xArr)
-                        #coordsNoTuple.append(yArr)
-                        #coordsNoTuple.append(zArr)
 
                         tuplecoord = [xArr, yArr, zArr]
                         coordsList.append(tuplecoord)
@@ -662,6 +681,9 @@ if __name__ == "__main__":
                         first = fo.readline()
                         firstparse = parameter.parseString(first)
                         f = 0
+
+                print "the coordsList is: ",  coordsList
+
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
             while (first.strip() == ''):
@@ -704,6 +726,34 @@ if __name__ == "__main__":
             if (len(firstparse) != 0 and (firstparse[0] == '}')):
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
+
+            # this is for the lineset case
+            if (len(firstparse) != 0 and (firstparse[0] == 'LineSet')):
+                first = fo.readline()
+                print "when we are at lineset, the line reads as: ", first
+
+                firstparse = parameter.parseString(first)
+
+                # for the first row, with the coordIndex as firstparse[0]
+                i = 0
+                # Go through the line
+                space = 0
+                while (i < len(firstparse)):
+
+                    k = firstparse[i]
+                    # if the element is a comma, bracket, or coordIndex, then move on to next element
+                    while ((k == ',') or (k == '[') or (k == ']')):
+                        if (i < len(firstparse) - 1):
+                            i += 1
+                            k = firstparse[i]
+                            print "the firstparse first is: ", firstparse
+                            print k
+                        else:
+                            first = fo.readline()
+                            firstparse = parameter.parseString(first)
+                            i = 0
+                            k = firstparse[i]
+                            print "the firstparse is: ", firstparse
 
             # start into the IndexedFaceSet block parameter
             if (len(firstparse) != 0 and (firstparse[0] == 'IndexedFaceSet')):
@@ -872,9 +922,10 @@ if __name__ == "__main__":
 
             print "wut3"
 
-            for i in range(len(worldPoints)):
-                both.append(worldPoints[i])
-            
+            if (len(worldPoints) != 0):
+                for i in range(len(worldPoints)):
+                    both.append(worldPoints[i])
+                
             first = fo.readline()
 
             print "The real indices of vertices are: ", RealIndices

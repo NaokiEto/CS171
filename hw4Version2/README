@@ -1,0 +1,54 @@
+Shaded Renderer in OpenGL
+
+
+
+The command is of the form
+
+
+
+python oglRenderer.py 2 500 500 cube2.iv 
+
+
+
+The first command line argument, 2 in this example, is to determine the type of shading.
+
+
+0 is wireframe
+
+1 is Flat shading
+
+2 is Gouraud Shading
+
+The next two command line arguments, 500 and 500 in this example, are the window size
+
+
+They are in pixels. So, in this case, a 500x500 window will pop up.
+
+
+Finally, the last command line argument is the .iv file to render. Here,
+it is cube2.iv
+
+
+
+As usual, this lab requires pyparsing and numpy, as detailed in my earlier labs.
+
+
+
+The mouse commands are that the left mouse button, when pressed down, will rotate the object.
+
+If only the right mouse button is pressed down, then the user can translate the object.
+
+If the right mouse button and the keyboard shift button are both pressed down, then the user can zoom in/out the object.
+
+
+Please wait a few seconds for it to render the larger .iv files
+
+As in the other labs, you can press 'q' to quit the window
+************************************************************************************************
+
+If additional information is needed to help run the program, please email me at neto@caltech.edu,
+
+and I will gladly assist.
+
+************************************************************************************************
+

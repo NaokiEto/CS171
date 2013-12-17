@@ -1,0 +1,27 @@
+One example to run this program is:
+
+python editspline.py 500 500
+
+The 1st and 2nd command line arguments (500 and 500 in this example)
+are the width and height of the new window in terms of pixels
+
+To move the control points, left click exactly on the control (very small
+deviatiion from the control point is ok, but I didn't make it too big) and
+move it around
+
+It will take  few seconds to update the spline and control point position.
+
+To insert knots, right click somewhere on the spline.
+
+To quit, you can press 'q', as in the other labs.
+
+************************************************************************************************
+
+If additional information is needed to help run the program, please email me at neto@caltech.edu,
+
+and I will gladly assist.
+
+************************************************************************************************
+
+
+

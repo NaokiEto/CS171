@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from OpenGL.GL import *
+from OpenGL.GL.shaders import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 import pyparsing as pp
@@ -8,6 +9,103 @@ import sys
 import os
 import numpy as np
 from math import*
+import png
+import itertools
+
+import PIL
+import Image
+import array
+
+def idle():
+    global time
+    time += 0.01
+
+    skyvertices = []
+    skynorms = []
+
+    # go through the rows
+    for srow in range(numvertpts):
+        skyrow = []
+        skynormsrow = []
+        # go through the columns
+        for scol in range(numhorizpts):
+            x = scol/float(numhorizpts) * 2.0 - 1.0
+            y = srow/float(numvertpts) * 2.0 - 1.0
+
+            skyrow.append([x, 0.03*cos(20.0*(x*x + y*y + 4.0*time)) - 1.0, y])
+
+            dfdx = -2.0*x*0.03*20.0*sin(20.0*(x*x + y*y + 4.0*time))
+            dfdy = -2.0*y*0.03*20.0*sin(20.0*(x*x + y*y + 4.0*time))
+
+            normalizingfactor = sqrt(dfdx*dfdx + dfdy*dfdy + 1.0)
+
+            skynormsrow.append([dfdx/float(normalizingfactor), -1.0/normalizingfactor, dfdy/float(normalizingfactor)])
+
+        skyvertices.append(skyrow)
+        skynorms.append(skynormsrow)
+
+    global indexedskyvertex
+    indexedskyvertex = []
+
+    global indexedskynorms
+    indexedskynorms = []
+
+    # now index these vertices
+    # we use 99 instead of 100 to avoid overflow
+    for rowidx in range(numvertpts - 1):
+        bottom = skyvertices[rowidx + 1]
+        top = skyvertices[rowidx]
+
+        bottomnorm = skynorms[rowidx + 1]
+        topnorm = skynorms[rowidx]
+
+        for colidx in range(numhorizpts - 1):
+
+            # make sure it is counter-clockwise (for backculling or something like that)
+            #  *--*
+            #  | /
+            #  |/
+            #  *
+            # this is for the top triangle
+            # this is for the vertices
+            topleft = top[colidx]
+            topright = top[colidx + 1]
+            bottomleft = bottom[colidx]
+    
+            indexedskyvertex.append(topright)
+            indexedskyvertex.append(topleft)
+            indexedskyvertex.append(bottomleft)
+
+            # this is for the norms
+            topleftnorm = topnorm[colidx]
+            toprightnorm = topnorm[colidx + 1]
+            bottomleftnorm = bottomnorm[colidx]
+
+            indexedskynorms.append(toprightnorm)
+            indexedskynorms.append(topleftnorm)
+            indexedskynorms.append(bottomleftnorm)
+
+            # make it counterclockwise for backculling or something like that
+            #     *
+            #    /|
+            #   / |
+            #  *--*
+            # this is for the bottom triangle
+            # this is for the vertices
+            bottomright = bottom[colidx + 1]
+
+            indexedskyvertex.append(bottomleft)
+            indexedskyvertex.append(bottomright)
+            indexedskyvertex.append(topright)
+
+            # this is for the norms
+            bottomrightnorm = bottomnorm[colidx]
+
+            indexedskynorms.append(bottomleftnorm)
+            indexedskynorms.append(bottomrightnorm)
+            indexedskynorms.append(toprightnorm)
+
+    glutPostRedisplay()
 
 def get_arcball_vector(x, y):
     p = np.array([x, y, 0.0])
@@ -47,20 +145,12 @@ def keyfunc(key, x, y):
 def mouseCB(button, state, x, y):
     mouseX = x
     mouseY = y
-    global mouseMiddleDown 
-    mouseMiddleDown = False
     global mouseLeftDown 
     mouseLeftDown = False
-    global mouseRightDown 
-    mouseRightDown = False
 
-    global shiftPressed
-    shiftPressed = False
-
+    # if press left mouse button, do rotation
     if(button == GLUT_LEFT_BUTTON):
         if(state == GLUT_DOWN):
-            print "the x-coordinate pixel is: ", x
-            print "the y-coordinate pixel is: ", y
             mouseLeftDown = True
             global lastRotX
             lastRotX = (x/float(xRes) - 0.5)*2.0
@@ -71,65 +161,8 @@ def mouseCB(button, state, x, y):
         elif(state == GLUT_UP):
             mouseLeftDown = False
 
-    elif(button == GLUT_RIGHT_BUTTON):
-        if(state == GLUT_DOWN):
-            mouseRightDown = True
-            print "mouse Middle is down!"
-        elif(state == GLUT_UP):
-            mouseRightDown = False
-            print "wut, this should not be happening"
-    print "the state of mouseMiddleDown is: ", mouseMiddleDown
-
-    mod = glutGetModifiers()
-    if (mod == GLUT_ACTIVE_SHIFT):
-        print "shift is activated!"
-        shiftPressed = True
-
 
 def mouseMotionCB(x, y):
-    mvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    glMatrixMode(GL_MODELVIEW)
-    glLoadIdentity()
-
-    # if only the right mouse button is down, then the 
-    # translation feature is enabled
-    if (mouseRightDown and shiftPressed == False):
-        #print "right right right activated!"
-        mouseX = x
-        mouseY = y
-
-        global lastX
-        dx = mouseX - lastX
-        global lastY
-        dy = mouseY - lastY
-        lastX = mouseX
-        lastY = mouseY
-
-        glTranslatef(dx/float(100), -1*dy/float(100), 0)
-        glRotatef(0, 0, 0, 0)
-        glScalef(1.0, 1.0, 1.0)
-
-        intermedmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-
-    # If the right button on the mouse is down while 'shift' is pressed simultaneously
-    # then the zooming feature is enabled.
-    if (mouseRightDown and shiftPressed):
-        mouseX = x
-        mouseY = y
-        global lastZoom
-        dy = mouseY - lastZoom
-        lastZoom = mouseY
-        glTranslatef(0, 0, -1*dy/float(100))
-        glRotatef(0, 0, 0, 0)
-        glScalef(1.0, 1.0, 1.0)
-
-    glMultMatrixf(mvm)
-
-    newmvm = glGetFloatv(GL_MODELVIEW_MATRIX)
-    #print "new mvm is: ", newmvm
-    
-    # tell GLUT to call the redrawing function, in this case redraw()
-    glutPostRedisplay()
 
     if(mouseLeftDown):
         global currRotX
@@ -137,13 +170,6 @@ def mouseMotionCB(x, y):
         global lastRotX
         global lastRotY
 
-        #print "the currRotX is: ", currRotX
-        #print "the lastRotX is: ", lastRotX
-
-        #cameraAngleY += (x - mouseX)
-        #cameraAngleX += (y - mouseY)
-        #print "the x-coordinate pixel2 is: ", x
-        #print "the y-coordinate pixel2 is: ", y
         mouseX = (x/float(xRes) - 0.5)*2.0
         mouseY = (1.0 - y/float(yRes) - 0.5)*2.0
 
@@ -167,71 +193,117 @@ def mouseMotionCB(x, y):
             lastRotX = currRotX
             lastRotY = currRotY
 
+def drawsky():
+
+    glBindTexture(GL_TEXTURE_2D, textureBinds[len(texturestodraw) - 1])
+
+    # Enable use of textures
+    glEnable(GL_TEXTURE_2D)
+
+    glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
+    glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
+    glEnable(GL_TEXTURE_GEN_S)
+    glEnable(GL_TEXTURE_GEN_T)
+
+    glEnableClientState(GL_NORMAL_ARRAY)
+    # activate and specify pointer to vertex array
+    glEnableClientState(GL_VERTEX_ARRAY)
+
+    glNormalPointer(GL_FLOAT, 0, indexedskynorms)
+
+    glVertexPointer(3, GL_FLOAT, 0, indexedskyvertex)
+
+    glDrawArrays(GL_TRIANGLES, 0, len(indexedskyvertex))
+
+    glDisableClientState(GL_VERTEX_ARRAY)
+    glDisableClientState(GL_NORMAL_ARRAY)
+
+    glDisable(GL_TEXTURE_GEN_S)
+    glDisable(GL_TEXTURE_GEN_T)
+
+    glDisable(GL_TEXTURE_2D)
+    glutSwapBuffers() 
+
 def draw1():
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-    print len(verticesAccum)
+    for i in range(len(translateAccum) + 1):
+        if (i < len(translateAccum)):
+            glPushMatrix()
+            lenOfSep = len(translateAccum[i])/3
+            for j in range(lenOfSep):
+                translX = translateAccum[i][3*j]
+                translY = translateAccum[i][3*j + 1]
+                translZ = translateAccum[i][3*j + 2]
 
-    for i in range(len(translateAccum)):
-        glPushMatrix()
-        lenOfSep = len(translateAccum[i])/3
-        for j in range(lenOfSep):
-            translX = translateAccum[i][3*j]
-            translY = translateAccum[i][3*j + 1]
-            translZ = translateAccum[i][3*j + 2]
+                rotateX = rotateAccum[i][4*j]
+                rotateY = rotateAccum[i][4*j + 1]
+                rotateZ = rotateAccum[i][4*j + 2]
+                rotateAngle = rotateAccum[i][4*j + 3]
 
-            rotateX = rotateAccum[i][4*j]
-            rotateY = rotateAccum[i][4*j + 1]
-            rotateZ = rotateAccum[i][4*j + 2]
-            rotateAngle = rotateAccum[i][4*j + 3]
+                scaleX = scalefAccum[i][3*j]
+                scaleY = scalefAccum[i][3*j + 1]
+                scaleZ = scalefAccum[i][3*j + 2]
 
-            scaleX = scalefAccum[i][3*j]
-            scaleY = scalefAccum[i][3*j + 1]
-            scaleZ = scalefAccum[i][3*j + 2]
+                glTranslatef(translX, translY, translZ)
+                glRotatef(rotateAngle*180.0/pi, rotateX, rotateY, rotateZ)
+                glScalef(scaleX, scaleY, scaleZ)
 
-            glTranslatef(translX, translY, translZ)
-            glRotatef(rotateAngle*180.0/pi, rotateX, rotateY, rotateZ)
-            glScalef(scaleX, scaleY, scaleZ)
+            # only work with the material if materialsActivate is 1 (in other words,
+            # if we have the materials subparameter)
+            if (materialsActivate == 1):
+                ambien = ambientAccum[i]
+                diffus = diffuseAccum[i]
+                specul = specularAccum[i]
+                shinin = shininess[i]
 
-        # check if length of specular or shininess
-        if (len(verticesAccum) != 0):
+                emissi = [0.0, 0.0, 0.0, 1.0]
 
-            ambien = ambientAccum[i]
-            diffus = diffuseAccum[i]
-            specul = specularAccum[i]
-            shinin = shininess[i]
-
-            emissi = [0.0, 0.0, 0.0, 1.0]
-
-            glMaterialfv(GL_FRONT, GL_AMBIENT, ambien)
-            glMaterialfv(GL_FRONT, GL_DIFFUSE, diffus)
-            glMaterialfv(GL_FRONT, GL_SPECULAR, specul)
-            glMaterialfv(GL_FRONT, GL_EMISSION, emissi)
-            glMaterialfv(GL_FRONT, GL_SHININESS, shinin)
+                glMaterialfv(GL_FRONT, GL_AMBIENT, ambien)
+                glMaterialfv(GL_FRONT, GL_DIFFUSE, diffus)
+                glMaterialfv(GL_FRONT, GL_SPECULAR, specul)
+                glMaterialfv(GL_FRONT, GL_EMISSION, emissi)
+                glMaterialfv(GL_FRONT, GL_SHININESS, shinin)
 
             IPT = verticesAccum[i]
-            INT = normsAccum[i]
+            INT = np.array(texturesAccum[i], dtype=np.float32)
+
+            # to avoid the sky.png at the end of the list
+            for fdx in range(len(texturestodraw) - 1):
+                if i in texturestodraw[fdx]:
+                    glBindTexture(GL_TEXTURE_2D, textureBinds[fdx])
+
+            glEnableClientState( GL_TEXTURE_COORD_ARRAY )
 
             # activate and specify pointer to vertex array
-            glEnableClientState(GL_NORMAL_ARRAY)
             glEnableClientState(GL_VERTEX_ARRAY)
 
-            glNormalPointer(GL_FLOAT, 0, INT)
+            # Enable use of textures
+            glEnable(GL_TEXTURE_2D)
+
             glVertexPointer(3, GL_FLOAT, 0, IPT)
+            glTexCoordPointer(2, GL_FLOAT, 0, INT)
 
             glDrawArrays(GL_TRIANGLES, 0, len(IPT))
 
-            glPopMatrix()
-            glutSwapBuffers() 
-
             # deactivate vertex arrays after drawing
             glDisableClientState(GL_VERTEX_ARRAY)
-            #glDisableClientState(GL_COLOR_ARRAY)
-            glDisableClientState(GL_NORMAL_ARRAY)
+
+            glDisableClientState(GL_TEXTURE_COORD_ARRAY)
+
+            glDisable(GL_TEXTURE_2D)
+
+            glPopMatrix()
+        
+        elif (i == len(translateAccum)):
+            drawsky()
 
 # run the script
 if __name__ == "__main__":
+
+    global time
+    time = 0.0
 
     cameraX = 0
     cameraY = 0
@@ -239,50 +311,34 @@ if __name__ == "__main__":
 
     glutInit(sys.argv)
 
+    # x dimension size
+    xRes = int(sys.argv[1])
+
+    # y dimension size
+    yRes = int(sys.argv[2])
+
+    # iv file name to input
+    ivFile = sys.argv[3]
+
+    # Create a list of the points in space for the lighting function
+    worldPoints = []
+    # Create a list of textures containing the rgb values
+    worldTextures = []
+
+    RealIndices = []
+    TextureIndices = []
+
     # Get a double-buffered, depth-buffer-enabled window, with an
     # alpha channel.
     # These options aren't really necessary but are here for examples.
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
 
-    if (len(sys.argv) == 5):
-        # whether to pick flat, gourad, or phong shading
-        # 0 is wireframe, 1 is flat, 2 is gouraud
-        shade = int(sys.argv[1])
-
-        # x dimension size
-        xRes = int(sys.argv[2])
-
-        # y dimension size
-        yRes = int(sys.argv[3])
-
-        # iv file name to input
-        ivFile = sys.argv[4]
-
-        # Tell openGL to use Gouraud shading:
-        if (shade == 2):
-            glShadeModel(GL_SMOOTH)
-
-        if (shade == 1):
-            glShadeModel(GL_FLAT)
-
-        # Tell opennGL to use WireFrame
-        if (shade == 0):
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-
-    elif (len(sys.argv) == 4):
-        # x dimension size
-        xRes = int(sys.argv[1])
-
-        # y dimension size
-        yRes = int(sys.argv[2])
-
-        # iv file name to input
-        ivFile = sys.argv[3]
-
     glutInitWindowSize(xRes, yRes)
     glutInitWindowPosition(300, 100)
 
-    glutCreateWindow("CS171 HW4")
+    glutCreateWindow("CS171 HW6")
+
+    glShadeModel(GL_SMOOTH)
     
     # Enable back-face culling:
     glEnable(GL_CULL_FACE)
@@ -306,11 +362,15 @@ if __name__ == "__main__":
     leftBracket = pp.Literal("[")
     rightBracket = pp.Literal("]")
     comma = pp.Literal(",")
+    period = pp.Literal(".")
+    sharp = pp.Literal("#")
 
     # Optional added for the additional number for rotation
-    parameter = pp.Optional(pp.Word( pp.alphas )) + pp.Optional(leftBracket) + \
-                pp.Optional(leftBrace) + pp.Optional(rightBracket) + \
-                pp.Optional(rightBrace) + pp.ZeroOrMore(number + pp.Optional(comma))
+    parameter = pp.Optional(sharp) + pp.Optional(pp.Word( pp.alphas )) + \
+                pp.Optional(pp.Word( pp.alphas ) + period + pp.Word(pp.alphas)) + \
+                pp.Optional(leftBracket) + pp.Optional(leftBrace) + \
+                pp.Optional(rightBracket) + pp.Optional(rightBrace) + \
+                pp.ZeroOrMore(number + pp.Optional(comma))
 
     # Open a file
     fo = open(ivFile, "r")
@@ -336,14 +396,20 @@ if __name__ == "__main__":
     specularAccum = []
     shininess = []
 
-    worldPoints = []
+    # if we have a materials sub-block in the the separator block, set materialsActivate
+    # to 1. If not, leave at 0.
+    materialsActivate = 0
 
-    # these are vertices and norms accumulated for all separators.
+    # if we have not yet read the png file, leave pngActivate at 0.
+    # Once we read the png file, set pngActivate to 1
+    pngActivate = 0
+
+    # This is if we skip a parameter in the separator block but later get to it
+    specialActivate = 0
+
+    # these are vertices and textures accumulated for all separators.
     verticesAccum = []
-    normsAccum = []
-
-    # these are the vertices for lineset
-    lineSet = []
+    texturesAccum = []
     
     global lastRotX
     lastRotX = 0
@@ -353,6 +419,21 @@ if __name__ == "__main__":
     currRotX = 0
     global currRotY
     currRotY = 0
+
+    global numhorizpts
+    numhorizpts = 50
+   
+    global numvertpts
+    numvertpts = 50
+
+    # list of texture png names (non-repeating)
+    texturesList = []
+
+    # list of texture binding thingies
+    textureBinds = []
+
+    # list of textures to draw
+    texturestodraw= []
 
     # as long as we don't reach the end of the file
     while (first != ''):
@@ -375,6 +456,7 @@ if __name__ == "__main__":
 
                     global lastZoom
                     lastZoom = cameraZ
+
                     campos = np.array([cameraX, cameraY, cameraZ])
 
                 # orientation paramter
@@ -415,6 +497,7 @@ if __name__ == "__main__":
 
             # inverse rotation matrix (for orientation of camera) (angle is in degrees)
             glRotatef(-1*angle*180.0/pi, x, y, z)
+            print "the angle is: ", -1*angle*180.0/pi
 
             # multiply with inverse translation matrix
             glTranslatef(-1.0*cameraX, -1.0*cameraY, -1.0*cameraZ)
@@ -425,14 +508,10 @@ if __name__ == "__main__":
             global cameraMat
             cameraMat = glGetFloatv(GL_MODELVIEW_MATRIX)
 
-            # calculate the camera matrix
-            # World space to camera space
-
             # calculate the Perspective Projection matrix
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
             glFrustum(l, r, b, t, n, f)
-
             global projMat
             projMat = glGetFloatv(GL_PROJECTION_MATRIX)
 
@@ -499,19 +578,41 @@ if __name__ == "__main__":
         # glDisable().
 
         # if we reach the Separator parameter
-        while (len(firstparse) != 0 and (firstparse[0] == 'Separator')):
-            first = fo.readline()
-            firstparse = parameter.parseString(first)
-            
-            # transform multiplication, initialized to identity matrix
-            totaltransform = np.identity(4)
+        while (len(firstparse) != 0 and ((firstparse[0] == 'Separator') or specialActivate == 1)):
+            if (specialActivate == 0):
+                first = fo.readline()
+                firstparse = parameter.parseString(first)
+                
+                # transform multiplication, initialized to identity matrix
+                totaltransform = np.identity(4)
 
-            totalNorm = np.identity(4)
+                totalNorm = np.identity(4)
 
-            translateSep = []
-            rotateSep = []
-            scalefSep = []
+                translateSep = []
+                rotateSep = []
+                scalefSep = []
 
+                # to determine which vertices to render
+                polygonvertices = []
+                texturevertices = []
+
+                uvvertices = []
+                # Create a list of the points in space for the lighting function
+                worldPoints = []
+
+                # Create a list of textures in terms of UV-coordinates
+                UVCoords = []
+                
+                # Create a list of both vertices and norms indices
+                both = []
+                # indices of the coordinates
+                RealIndices = []
+
+                # Create a list of textures in terms of pixel data (255, 255, 255) style
+                # this has been indexed
+                TextureIndices = []
+
+            specialActivate = 0
             # if we reach the Transform sub-parameter
             while (len(firstparse) != 0 and (firstparse[0] == 'Transform')):
                 first = fo.readline()
@@ -584,15 +685,21 @@ if __name__ == "__main__":
 
                 scalefSep.append(sfX)
                 scalefSep.append(sfY)
-                scalefSep.append(sfZ) 
+                scalefSep.append(sfZ)
 
                 # end of Transform block parameter
                 if (len(firstparse) != 0 and (firstparse[0] == '}')):
                     first = fo.readline()
                     firstparse = parameter.parseString(first)
+                
+            while (len(firstparse) != 0 and (firstparse[0] == '#')):
+                first = fo.readline()
+                firstparse = parameter.parseString(first)
 
             # entering the Material subparameter
             if (len(firstparse) != 0 and (firstparse[0] == 'Material')):
+                # activate since we reached the Material sub-block
+                materialsActivate = 1
                 first = fo.readline()
                 # the -20 is determine if the parameter is included or not
                 amb = [-20, 0.0, 0.0, 1.0]
@@ -636,7 +743,6 @@ if __name__ == "__main__":
                     spec[2] = 0.0
                 if (shiny == -20):
                     shiny = 0.2
-                #glEnable(GL_COLOR_MATERIAL);
 
                 ambientAccum.append(amb)
                 diffuseAccum.append(diff)
@@ -650,22 +756,85 @@ if __name__ == "__main__":
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
 
+            if (len(firstparse) != 0 and (firstparse[0] == 'Texture')):
+                pngActivate = 1
+                first = fo.readline()
+                firstparse = parameter.parseString(first)
+                f = 0
+                while (firstparse[f] != '}' and firstparse[f] != ']' and first.strip() != '}'):
+                    if (firstparse[f] == 'filename'):
+
+                        # construct the filename from the 3 parsed parts ("file prefix" + "." + "png")
+                        filename = firstparse[1] + firstparse[2] + firstparse[3]
+
+                        # if the file name is unique, add it to the texturesList
+                        if str(filename) not in texturesList:
+                            newfile = [len(translateAccum)]
+                            texturesList.append(str(filename))
+
+                            # read the png data
+                            im = PIL.Image.open(filename)
+
+                            im = im.convert("RGBA") 
+                            try:
+                                row_count, column_count, img_data = im.size[0], im.size[1], im.tostring("raw", "RGBA", 0, -1)
+                            except SystemError:
+                                row_count, column_count, img_data = im.size[0], im.size[1], im.tostring("raw", "RGBX", 0, -1)
+
+                            # initialize generation of texture
+                            # It creates a blank texture in GL memory
+                            # the lenght of the texturesList is a good indicator of what the id of the texture png is
+
+                            totaltextures = len(texturesList)
+
+                            texture = glGenTextures(1)
+
+                            textureBinds.append(texture)
+
+                            # Bind texture into OpenGL memory
+                            glBindTexture(GL_TEXTURE_2D, textureBinds[totaltextures - 1])
+
+                            #glPixelStorei(GL_UNPACK_ALIGNMENT,1)
+
+                            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+                            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+
+                            # append a new set of indices for a new texture
+                            # these indices will be important for glBindTexture
+                            # the position of newfile in texturestodraw corresponds to the the draw id for
+                            # glBindTexture
+                            texturestodraw.append(newfile)
+
+                        else:
+
+                            # if a particular texture is repeated, add the index. These indices are based on
+                            # the length of translateAccum
+                            texturestodraw[totaltextures - 1].append(len(translateAccum))
+
+                    first = fo.readline()
+                    firstparse = parameter.parseString(first)
+                # after reading the } character, move on to the next line
+                first = fo.readline()
+                firstparse = parameter.parseString(first)
+
             # entering the Coordinate subparameter
             if (len(firstparse) != 0 and (firstparse[0] == 'Coordinate')):
-                print "We are entering the Coordinate parameter"
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
                 if (len(firstparse) != 0 and (firstparse[0] == 'point')):
                     # Create a list of the coordinates
                     coordsList = []
                     # to compensate for the point
+                    # if the length of the line is greater than 2, then set f (which is the index)
+                    # to 2 since "point" and "[" would take the first two indices 0 and 1
                     f = 2
 
-                    # if the length of the line is less than 2 (so if it is point [ )
+                    # if the length of the line is less than 2 (so if it is point [
                     if (len(firstparse) < 3):
                         first = fo.readline()
                         firstparse = parameter.parseString(first)
                         f = 0
+
                     while (firstparse[f] != ']' and firstparse[f] != '}' and first.strip() != '}'):
                         xArr = float(firstparse[f])
                         yArr = float(firstparse[f+1])
@@ -677,9 +846,6 @@ if __name__ == "__main__":
                         first = fo.readline()
                         firstparse = parameter.parseString(first)
                         f = 0
-
-                print "the coordsList is: ",  coordsList
-
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
             while (first.strip() == ''):
@@ -691,24 +857,38 @@ if __name__ == "__main__":
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
 
-            print "wut"
-
-            # entering the Normal subparameter
-            if (len(firstparse) != 0 and (firstparse[0] == 'Normal')):
+            while (len(firstparse) != 0 and (firstparse[0] == '#')):
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
-                if (len(firstparse) != 0 and (firstparse[0] == 'vector')):
-                    # Create a list of the normals
-                    vectorsList = []
-                    # to compensate for the point
-                    f = 2
-                    while (firstparse[f] != ']' and firstparse[f] != '}' and first.strip() != '}'):
-                        xVec = float(firstparse[f])
-                        yVec = float(firstparse[f+1])
-                        zVec = float(firstparse[f+2])
 
-                        tuplepoint = [xVec, yVec, zVec]
-                        vectorsList.append(tuplepoint)
+            # entering the TextureCoordinate subparameter
+            if (len(firstparse) != 0 and (firstparse[0] == 'TextureCoordinate')):
+                first = fo.readline()
+                firstparse = parameter.parseString(first)
+                if (len(firstparse) != 0 and (firstparse[0] == 'point')):
+                    #print "wut wut wut wtu wut"
+                    # Create a list of the texture points
+                    TexturesList = []
+                    priorList = []
+                    UVList = []
+
+                    # if the length of the line is greater than 2, then set f (which is the index)
+                    # to 2 since "point" and "[" would take the first two indices 0 and 1
+                    f = 2
+
+                    # if the length of the line is less than 2 (so if it is point [
+                    if (len(firstparse) < 3):
+                        first = fo.readline()
+                        firstparse = parameter.parseString(first)
+                        f = 0
+                    while (firstparse[f] != ']' and firstparse[f] != '}' and first.strip() != '}'):
+                        # read the decimal that is between 0 and 1 for the row and column of the texture
+                        xTex = float(firstparse[f])
+                        yTex = float(firstparse[f+1])
+                        openglyTex = 1.0 - yTex
+
+                        UVList.append([xTex, yTex])
+                        
                         first = fo.readline()
                         firstparse = parameter.parseString(first)
                         f = 0
@@ -723,49 +903,29 @@ if __name__ == "__main__":
                 first = fo.readline()
                 firstparse = parameter.parseString(first)
 
-            # this is for the lineset case
-            if (len(firstparse) != 0 and (firstparse[0] == 'LineSet')):
-                first = fo.readline()
-                print "when we are at lineset, the line reads as: ", first
-
-                firstparse = parameter.parseString(first)
-
-                # for the first row, with the coordIndex as firstparse[0]
-                i = 0
-                # Go through the line
-                space = 0
-                while (i < len(firstparse)):
-
-                    k = firstparse[i]
-                    # if the element is a comma, bracket, or coordIndex, then move on to next element
-                    while ((k == ',') or (k == '[') or (k == ']')):
-                        if (i < len(firstparse) - 1):
-                            i += 1
-                            k = firstparse[i]
-                            print "the firstparse first is: ", firstparse
-                            print k
-                        else:
-                            first = fo.readline()
-                            firstparse = parameter.parseString(first)
-                            i = 0
-                            k = firstparse[i]
-                            print "the firstparse is: ", firstparse
-
             # start into the IndexedFaceSet block parameter
             if (len(firstparse) != 0 and (firstparse[0] == 'IndexedFaceSet')):
                 first = fo.readline()
 
                 # to determine which vertices to render
                 polygonvertices = []
-                normvertices = []
+                texturevertices = []
+
+                uvvertices = []
                 # Create a list of the points in space for the lighting function
                 worldPoints = []
-                # Create a list of norms in world space for the lighting function
-                worldNorms = []
+
+                # Create a list of textures in terms of UV-coordinates
+                UVCoords = []
+                
                 # Create a list of both vertices and norms indices
                 both = []
+                # indices of the coordinates
                 RealIndices = []
-                NormIndices = []
+
+                # Create a list of textures in terms of pixel data (255, 255, 255) style
+                # this has been indexed
+                TextureIndices = []
 
                 index = -1
                 # for both the coordinates and the normals
@@ -774,29 +934,29 @@ if __name__ == "__main__":
                 firstpoint = -100
                 firstparse = parameter.parseString(first)
 
+                while (len(firstparse) != 0 and (firstparse[0] == '#')):
+                    first = fo.readline()
+                    firstparse = parameter.parseString(first)
+
                 # for the first row, with the coordIndex as firstparse[0]
                 i = 0
                 # Go through the line
                 space = 0
-                while (i < len(firstparse) and firstparse[0] != 'normalIndex'):
+                while (i < len(firstparse) and firstparse[0] != 'textureCoordIndex'):
                     k = firstparse[i]
                     # if the element is a comma, bracket, or coordIndex, then move on to next element
                     while ((k == ',') or (k == '[') or (k == ']') or (k == 'coordIndex')):
                         if (i < len(firstparse) - 1):
                             i += 1
                             k = firstparse[i]
-                            print "the firstparse first is: ", firstparse
-                            print k
                         else:
                             first = fo.readline()
                             firstparse = parameter.parseString(first)
                             i = 0
                             k = firstparse[i]
-                            print "the firstparse is: ", firstparse
                     # if  we have 3 points (whether we reach 1 or -1), add the triangle
                     # to the big list, and reset the 3point list to have the first point
                     if (len(polygonvertices) == 3):
-                        print "never reach here?"
                         worldPoints.append(polygonvertices)
                         if (firstpoint == -100):
                             firstpoint = polygonvertices[0]
@@ -805,7 +965,6 @@ if __name__ == "__main__":
                         RealIndices.append(polygonvertices[2])
                         lastpoint = polygonvertices[2]
                         polygonvertices = []
-                        print polygonvertices
                         if (int(k) != -1):
                             # add the very first point
                             polygonvertices.append(firstpoint)
@@ -826,8 +985,6 @@ if __name__ == "__main__":
                         # we have to add 2 to accomodate that comma
                         if (i+2 < len(firstparse)):
                             firstpoint = int(firstparse[i+2])
-                            print "the new first point is: ", firstpoint
-                            #print "the first point is: ", firstpoint
                             polygonvertices.append(firstpoint)
                             # move to next comma after first point
                             i += 2
@@ -835,24 +992,24 @@ if __name__ == "__main__":
                         else:
                             first = fo.readline()
                             firstparse = parameter.parseString(first)
-                            if (firstparse[0] != 'normalIndex'):
+                            # if we reach the end bracket as the first element (which means it is by itself)
+                            # then move to next line
+                            if (firstparse[0] == ']'):
+                                first = fo.readline()
+                                firstparse = parameter.parseString(first)
+                            if (firstparse[0] != 'textureCoordIndex'):
                                 firstpoint = int(firstparse[0])
                                 polygonvertices.append(firstpoint)
                             i = 0
-                        
-                        print "hey"
                     i += 1
-                    print "dum dum dum", polygonvertices
 
-                print "life sucks"
-          
-                if (firstparse[0] == 'normalIndex'):
+                if (firstparse[0] == 'textureCoordIndex'):
                     firstpoint = -100
                     j = 0
                     while(j < len(firstparse) and first.strip() != '}'):
                         k = firstparse[j]
                         # if the element is a comma, bracket, or coordIndex, then move on to next element
-                        while ((k == ',') or (k == '[') or (k == ']') or (k == 'normalIndex')):
+                        while ((k == ',') or (k == '[') or (k == ']') or (k == 'textureCoordIndex')):
                             if (j < len(firstparse) - 1):
                                 j += 1
                                 k = firstparse[j]
@@ -860,72 +1017,80 @@ if __name__ == "__main__":
                                 first = fo.readline()
                                 firstparse = parameter.parseString(first)
                                 j = 0
-                                print "mhm, ", firstparse
                                 k = firstparse[j]
-
+                        
                         # if  we have 3 points (whether we reach 1 or -1), add the triangle
                         # to the big list, and reset the 3point list to have the first point
-                        if (len(normvertices) == 3):
-                            print "2never reach here?"
-                            worldNorms.append(normvertices)
+                        if (len(texturevertices) == 3):
+                            worldTextures.append(texturevertices)
                             if (firstpoint == -100):
-                                firstpoint = normvertices[0]
-                            NormIndices.append(normvertices[0])
-                            NormIndices.append(normvertices[1])
-                            NormIndices.append(normvertices[2])
-                            lastpoint = normvertices[2]
-                            normvertices = []
-                            print normvertices
+                                firstpoint = texturevertices[0]
+                            TextureIndices.append(texturevertices[0])
+                            TextureIndices.append(texturevertices[1])
+                            TextureIndices.append(texturevertices[2])
+                            lastpoint = texturevertices[2]
+                            texturevertices = []
                             if (int(k) != -1):
                                 # add the very first point
-                                normvertices.append(firstpoint)
+                                texturevertices.append(firstpoint)
                                 # add the point before current point
-                                normvertices.append(lastpoint)
+                                texturevertices.append(lastpoint)
                                 # add the current point
-                                normvertices.append(int(k))
-                            print "2the index is at : ", int(k)
-                            print "norms will roll"
+                                texturevertices.append(int(k))
 
                         # if there are less than 3 points in the list, add another point
-                        elif (len(normvertices) < 3):
-                            normvertices.append(int(k))
-                            print "nooooooo2 ", int(k)
+                        elif (len(texturevertices) < 3):
+                            texturevertices.append(int(k))
                         # if reach the end of a face
                         if (k == -1):
-                            print "we go here!2"
                             # reset the list of 3 points to an empty list
-                            normvertices = []
+                            texturevertices = []
                             # if the next index is in the line
                             # we have to add 2 to accomodate that comma
                             if (j+2 < len(firstparse)):
                                 firstpoint = int(firstparse[j+2])
-                                normvertices.append(firstpoint)
+                                texturevertices.append(firstpoint)
                                 # move to next comma after first point
                                 j += 2
                             else:
                                 first = fo.readline()
                                 firstparse = parameter.parseString(first)
+                                # if we reach the end bracket as the first element (which means it is by itself)
+                                # then move to next line
+                                if (firstparse[0] == ']'):
+                                    first = fo.readline()
+                                    firstparse = parameter.parseString(first)
                                 if (firstparse[0] != '}'):
                                     firstpoint = int(firstparse[0])
-                                    normvertices.append(firstpoint)
+                                    texturevertices.append(firstpoint)
                                 j = 0
-                            print "hey2 ", normvertices
                         j += 1
-                        print "ho ho ho ho ho ho ho heheheheheheheh ", normvertices
                                 
                     first = fo.readline()
                     firstparse = parameter.parseString(first)
 
-            print "wut3"
+            # Assign Image data to texture
+            # The parameters are:
+            # type of texture (GL_TEXTURE_2D)
+            # used for mipmapping, 0 for us
+            # number of color channels
+            # number of pixels across
+            # number of pixels up and down
+            # border: must be 0
+            # format of pixel data
+            # type of pixel data
+            # data
+            if (pngActivate == 1):
+                glTexImage2D(GL_TEXTURE_2D, 0, 3, row_count, column_count, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
+
+            # go through the vertices of the textures in worldTextures
+            # create a list of all the points and colors in the texture.
 
             if (len(worldPoints) != 0):
                 for i in range(len(worldPoints)):
                     both.append(worldPoints[i])
-                
+            
             first = fo.readline()
-
-            print "The real indices of vertices are: ", RealIndices
-            print len(RealIndices)
 
             IndexedPointsTuple = []
             IndexedPoints = []
@@ -938,51 +1103,162 @@ if __name__ == "__main__":
                     IndexedPoints.append(tuplecoord[1])
                     IndexedPoints.append(tuplecoord[2])
 
-            IndexedNormsTuple = []
-            IndexedNorms = []
-            for i in range(len(NormIndices)):
-                indextobe = NormIndices[i]
+            
+            IndexedTexturesTuple = []
+            IndexedTextures = []
+            for i in range(len(TextureIndices)):
+                indextobe = TextureIndices[i]
                 if (indextobe != -1):
-                    tupleNorm = vectorsList[int(indextobe)]
-                    IndexedNormsTuple.append(tupleNorm)
-                    IndexedNorms.append(tupleNorm[0])
-                    IndexedNorms.append(tupleNorm[1])
-                    IndexedNorms.append(tupleNorm[2])
+                    tupleTexture = UVList[int(indextobe)]
+                    IndexedTexturesTuple.append(tupleTexture)
+                    IndexedTextures.append(tupleTexture[0])
+                    IndexedTextures.append(tupleTexture[1])
 
-            print "the RealIndices are: "
-            print len(RealIndices)
-            print RealIndices
-
-            print "the NormIndices are: "
-            print len(NormIndices)
-            print NormIndices
-
-            print "hi there!"
             translateAccum.append(translateSep)
             rotateAccum.append(rotateSep)
             scalefAccum.append(scalefSep)
 
             verticesAccum.append(IndexedPointsTuple)
-            normsAccum.append(IndexedNormsTuple)
-        first = fo.readline()
+            texturesAccum.append(IndexedTexturesTuple)
+
         firstparse = parameter.parseString(first)
-        print "the next line1 is: ", firstparse
-        if (first == ''):
-            print "hey! it ended!"
-            print "the translateAccum is: ", translateAccum
-            print "the rotateAccum is: ", rotateAccum
-            print "the scalefAccum is: ", scalefAccum
+        
+        if (len(firstparse) != 0 and firstparse[0] != 'PerspectiveCamera' and firstparse[0] != 'PointLight'
+            and firstparse[0] != 'Separator' and firstparse[0] != 'Transform'
+            and firstparse[0] != 'Material' and firstparse[0] != 'Texture'
+            and firstparse[0] != 'Coordinate' and firstparse[0] != 'point'
+            and firstparse[0] != 'TextureCoordinate' and firstparse[0] != 'IndexedFaceSet'
+            and firstparse[0] != 'coordIndex' and firstparse[0] != 'textureCoordIndex'):
+            first = fo.readline()
+            firstparse = parameter.parseString(first)
+        if (len(firstparse) == 0 or firstparse[0] == '#'):
+            first = fo.readline()
+            firstparse = parameter.parseString(first)
 
-            print "the ambientAccum: ", ambientAccum
-            print "the diffuseAccum: ", diffuseAccum
-            print "the specularAccum: ", specularAccum
-            print "the shininess is: ", shininess
+        if (len(firstparse) != 0 and (firstparse[0] == 'Transform' or firstparse[0] == 'Material'
+            or firstparse[0] == 'Texture' or firstparse[0] == 'Coordinate'
+            or firstparse[0] == 'TextureCoordinate' or firstparse[0] == 'IndexedFaceSet')):
+            specialActivate = 1
 
-            print "the verticesAccum is: ", verticesAccum
-            print "the normsAccum is: ", normsAccum
     fo.close()
 
+    skyvertices = []
+    skynorms = []
+
+    # go through the rows
+    for srow in range(numvertpts):
+        skyrow = []
+        skynormsrow = []
+        # go through the columns
+        for scol in range(numhorizpts):
+            x = scol/float(numhorizpts) * 2.0 - 1.0
+            y = srow/float(numvertpts) * 2.0 - 1.0
+
+            skyrow.append([x, 0.03*cos(20.0*(x*x + y*y + 4*time)) - 1.0, y])
+
+            dfdx = -2.0*x*0.03*20.0*sin(20.0*(x*x + y*y + 4.0*time))
+            dfdy = -2.0*y*0.03*20.0*sin(20.0*(x*x + y*y + 4.0*time))
+
+            normalizingfactor = sqrt(dfdx*dfdx + dfdy*dfdy + 1.0)
+
+            skynormsrow.append([dfdx/float(normalizingfactor), -1.0/normalizingfactor, dfdy/float(normalizingfactor)])
+
+        skyvertices.append(skyrow)
+        skynorms.append(skynormsrow)
+
+    global indexedskyvertex
+    indexedskyvertex = []
+
+    global indexedskynorms
+    indexedskynorms = []
+
+    # now index these vertices
+    # we use 99 instead of 100 to avoid overflow
+    for rowidx in range(numvertpts - 1):
+        bottom = skyvertices[rowidx + 1]
+        top = skyvertices[rowidx]
+
+        bottomnorm = skynorms[rowidx + 1]
+        topnorm = skynorms[rowidx]
+
+        for colidx in range(numhorizpts - 1):
+
+            # make sure it is counterclockwise for backculling
+            #  *--*
+            #  | /
+            #  |/
+            #  *
+            # this is for the top triangle
+            # this is for the vertices
+            topleft = top[colidx]
+            topright = top[colidx + 1]
+            bottomleft = bottom[colidx]
+    
+            indexedskyvertex.append(topright)
+            indexedskyvertex.append(topleft)
+            indexedskyvertex.append(bottomleft)
+
+            # this is for the norms
+            topleftnorm = topnorm[colidx]
+            toprightnorm = topnorm[colidx + 1]
+            bottomleftnorm = bottomnorm[colidx]
+
+            indexedskynorms.append(toprightnorm)
+            indexedskynorms.append(topleftnorm)
+            indexedskynorms.append(bottomleftnorm)
+
+            # make sure it is counter-clockwise for backculling
+            #     *
+            #    /|
+            #   / |
+            #  *--*
+            # this is for the bottom triangle
+            # this is for the vertices
+            bottomright = bottom[colidx + 1]
+
+            indexedskyvertex.append(bottomleft)
+            indexedskyvertex.append(bottomright)
+            indexedskyvertex.append(topright)
+
+            # this is for the norms
+            bottomrightnorm = bottomnorm[colidx]
+
+            indexedskynorms.append(bottomleftnorm)
+            indexedskynorms.append(bottomrightnorm)
+            indexedskynorms.append(toprightnorm)
+
+    newfile = [len(translateAccum) + 1]
+
+    # takes care of the sky data
+    sky = PIL.Image.open("sky.png")
+
+    sky = sky.convert("RGBA") 
+    try:
+        row_sky, column_sky, sky_data = sky.size[0], sky.size[1], sky.tostring("raw", "RGBA", 0, -1)
+    except SystemError:
+        row_sky, column_sky, sky_data = sky.size[0], sky.size[1], sky.tostring("raw", "RGBX", 0, -1)
+
+    texturesList.append("sky.png")
+
+    totaltextures = len(texturesList)
+
+    texture = glGenTextures(1)
+
+    textureBinds.append(texture)
+
+    # Bind texture into OpenGL memory
+    glBindTexture(GL_TEXTURE_2D, textureBinds[totaltextures - 1])
+
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)    
+
+    texturestodraw.append(newfile)
+
+    glTexImage2D(GL_TEXTURE_2D, 0, 3, row_sky, column_sky, 0, GL_RGBA, GL_UNSIGNED_BYTE, sky_data)
+
     glutDisplayFunc(draw1)
+
+    glutIdleFunc(idle)
 
     glutReshapeFunc(resize)
 
